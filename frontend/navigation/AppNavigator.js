@@ -1,12 +1,12 @@
-import React, { useContext } from 'react';
+import React from 'react';
 import { View, ActivityIndicator, StyleSheet } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
-import { AuthContext } from '../context/AuthContext';
+import { useAuth } from '../context/AuthContext';
 import AuthNavigator from './AuthNavigator';
 import MainNavigator from './MainNavigator';
 
 export default function AppNavigator() {
-  const { user, loading } = useContext(AuthContext);
+  const { user, loading } = useAuth();
   
   if (loading) {
     return (

@@ -1,9 +1,9 @@
-import React, { useState, useContext } from 'react';
+import React from 'react';
 import { View, Text, Button, StyleSheet } from 'react-native';
-import { AuthContext } from '../context/AuthContext';
+import { useAuth } from '../context/AuthContext';
 
 export default function ProfileScreen({ navigation }) {
-  const { user, logout } = useContext(AuthContext);
+  const { user, logout } = useAuth();
   return (
     <View style={styles.container}>
       <Text style={styles.label}>Name: {user?.name}</Text>

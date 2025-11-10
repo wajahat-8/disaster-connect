@@ -1,6 +1,6 @@
 import React, { createContext, useState, useEffect, useContext } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { API_BASE_URL } from '../config';
+import api from '../api/apiClient';
 
 export const AuthContext = createContext();
 
@@ -14,6 +14,15 @@ export const AuthProvider = ({ children }) => {
     checkAuthState();
   }, []);
 
+  // Set axios default authorization header when token changes
+  useEffect(() => {
+    if (token) {
+      api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+    } else {
+      delete api.defaults.headers.common['Authorization'];
+    }
+  }, [token]);
+
   const checkAuthState = async () => {
     try {
       const storedToken = await AsyncStorage.getItem('userToken');
@@ -22,6 +31,19 @@ export const AuthProvider = ({ children }) => {
       if (storedToken && storedUser) {
         setToken(storedToken);
         setUser(JSON.parse(storedUser));
+        api.defaults.headers.common['Authorization'] = `Bearer ${storedToken}`;
+        
+        // Verify token is still valid by fetching current user
+        try {
+          const response = await api.get('/auth/me');
+          if (response.data.success && response.data.user) {
+            await updateUser(response.data.user);
+          }
+        } catch (error) {
+          // Token invalid, clear storage
+          console.log('Token invalid, clearing auth state');
+          await logout();
+        }
       }
     } catch (error) {
       console.log('Error checking auth state:', error);
@@ -32,41 +54,78 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (email, password) => {
     try {
-      const res = await fetch(`${API_BASE_URL}/auth/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
+      const response = await api.post('/auth/login', { 
+        email, 
+        password 
       });
-      const data = await res.json();
-      if (!res.ok) return { success: false, error: data.message || 'Login failed' };
       
-      await AsyncStorage.setItem('userToken', data.token);
-      await AsyncStorage.setItem('userData', JSON.stringify(data.user));
-      setToken(data.token);
-      setUser(data.user);
+      const { token: userToken, user: userData } = response.data;
+      
+      if (!userToken || !userData) {
+        throw new Error('Invalid response from server');
+      }
+      
+      await AsyncStorage.setItem('userToken', userToken);
+      await AsyncStorage.setItem('userData', JSON.stringify(userData));
+      setToken(userToken);
+      setUser(userData);
+      
       return { success: true };
     } catch (error) {
-      return { success: false, error: error.message };
+      console.log('Login error:', error);
+      
+      // Provide more helpful error messages
+      let errorMessage = 'Login failed';
+      
+      if (error.code === 'ECONNREFUSED' || error.message?.includes('Network Error')) {
+        errorMessage = 'Cannot connect to server. Please check:\n1. Backend server is running\n2. Correct IP address in config.js\n3. Both devices on same network\n4. Firewall allows port 5000';
+      } else if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      return { 
+        success: false, 
+        error: errorMessage
+      };
     }
   };
 
   const register = async (userData) => {
     try {
-      const res = await fetch(`${API_BASE_URL}/auth/register`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(userData),
-      });
-      const data = await res.json();
-      if (!res.ok) return { success: false, error: data.message || 'Registration failed' };
+      const response = await api.post('/auth/register', userData);
       
-      await AsyncStorage.setItem('userToken', data.token);
-      await AsyncStorage.setItem('userData', JSON.stringify(data.user));
-      setToken(data.token);
-      setUser(data.user);
+      const { token: userToken, user: userDataResponse } = response.data;
+      
+      if (!userToken || !userDataResponse) {
+        throw new Error('Invalid response from server');
+      }
+      
+      await AsyncStorage.setItem('userToken', userToken);
+      await AsyncStorage.setItem('userData', JSON.stringify(userDataResponse));
+      setToken(userToken);
+      setUser(userDataResponse);
+      
       return { success: true };
     } catch (error) {
-      return { success: false, error: error.message };
+      console.log('Register error:', error);
+      
+      // Provide more helpful error messages
+      let errorMessage = 'Registration failed';
+      
+      if (error.code === 'ECONNREFUSED' || error.message?.includes('Network Error')) {
+        errorMessage = 'Cannot connect to server. Please check:\n1. Backend server is running\n2. Correct IP address in config.js\n3. Both devices on same network\n4. Firewall allows port 5000';
+      } else if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      return { 
+        success: false, 
+        error: errorMessage
+      };
     }
   };
 
@@ -76,12 +135,13 @@ export const AuthProvider = ({ children }) => {
       await AsyncStorage.removeItem('userData');
       setUser(null);
       setToken(null);
+      delete api.defaults.headers.common['Authorization'];
     } catch (error) {
       console.log('Logout error:', error);
     }
   };
 
-  // ✅ Add this function to update user data
+  // Update user data in context and storage
   const updateUser = async (userData) => {
     try {
       setUser(userData);
@@ -92,125 +152,105 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // ✅ Add this function to update profile via API
+  // Update profile via API
   const updateProfile = async (profileData) => {
     try {
-      const res = await fetch(`${API_BASE_URL}/auth/profile`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify(profileData),
-      });
-
-      const data = await res.json();
+      console.log('Updating profile with data:', profileData);
       
-      if (!res.ok) {
-        return { success: false, error: data.message || 'Profile update failed' };
+      const response = await api.put('/users/profile', profileData);
+      
+      const { user: userData } = response.data;
+      
+      if (!userData) {
+        throw new Error('Invalid response from server');
       }
-
+      
       // Update local user data
-      await updateUser(data.user);
-      return { success: true, user: data.user };
+      await updateUser(userData);
+      return { success: true, user: userData };
     } catch (error) {
-      return { success: false, error: error.message };
+      console.log('Update profile error:', error.response?.data || error.message);
+      return { 
+        success: false, 
+        error: error.response?.data?.message || error.message || 'Profile update failed' 
+      };
     }
   };
 
   // Admin Functions
-  const getAllUsers = async (filters) => {
+  const getAllUsers = async (filters = {}) => {
     try {
-      const queryParams = new URLSearchParams({
-        page: filters.page || 1,
-        limit: filters.limit || 10,
-        role: filters.role !== 'all' ? filters.role : '',
-        search: filters.search || ''
-      }).toString();
-
-      const res = await fetch(`${API_BASE_URL}/auth/users?${queryParams}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
+      const response = await api.get('/v1/admin/users', {
+        params: {
+          page: filters.page || 1,
+          limit: filters.limit || 10,
+          role: filters.role !== 'all' ? filters.role : '',
+          search: filters.search || ''
+        }
       });
       
-      const data = await res.json();
-      if (!res.ok) return { success: false, error: data.message };
+      const { data } = response.data;
       
       return { 
         success: true, 
         data: {
-          users: data.users,
-          totalPages: data.totalPages,
-          currentPage: data.currentPage,
-          totalUsers: data.totalUsers
+          users: data,
+          totalPages: response.data.totalPages,
+          currentPage: response.data.currentPage,
+          totalUsers: response.data.results
         }
       };
     } catch (error) {
-      return { success: false, error: error.message };
+      console.log('Get all users error:', error.response?.data || error.message);
+      return { 
+        success: false, 
+        error: error.response?.data?.message || error.message || 'Failed to fetch users' 
+      };
     }
   };
 
   const getUserStats = async () => {
     try {
-      const res = await fetch(`${API_BASE_URL}/auth/stats/users`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-      
-      const data = await res.json();
-      if (!res.ok) return { success: false, error: data.message };
+      const response = await api.get('/v1/admin/stats/users');
       
       return { 
         success: true,
-        stats: {
-          totalUsers: data.totalUsers,
-          totalAdmins: data.totalAdmins,
-          totalVolunteers: data.totalVolunteers,
-          recentRegistrations: data.recentRegistrations
-        }
+        stats: response.data.data
       };
     } catch (error) {
-      return { success: false, error: error.message };
+      console.log('Get user stats error:', error.response?.data || error.message);
+      return { 
+        success: false, 
+        error: error.response?.data?.message || error.message || 'Failed to fetch user statistics' 
+      };
     }
   };
 
   const updateUserById = async (userId, userData) => {
     try {
-      const res = await fetch(`${API_BASE_URL}/auth/users/${userId}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify(userData),
-      });
-
-      const data = await res.json();
-      if (!res.ok) return { success: false, error: data.message };
+      const response = await api.put(`/v1/admin/users/${userId}`, userData);
       
-      return { success: true, data: data.user };
+      return { success: true, data: response.data.data };
     } catch (error) {
-      return { success: false, error: error.message };
+      console.log('Update user error:', error.response?.data || error.message);
+      return { 
+        success: false, 
+        error: error.response?.data?.message || error.message || 'Failed to update user' 
+      };
     }
   };
 
   const deleteUser = async (userId) => {
     try {
-      const res = await fetch(`${API_BASE_URL}/auth/users/${userId}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-
-      const data = await res.json();
-      if (!res.ok) return { success: false, error: data.message };
+      await api.delete(`/v1/admin/users/${userId}`);
       
       return { success: true };
     } catch (error) {
-      return { success: false, error: error.message };
+      console.log('Delete user error:', error.response?.data || error.message);
+      return { 
+        success: false, 
+        error: error.response?.data?.message || error.message || 'Failed to delete user' 
+      };
     }
   };
 
@@ -228,7 +268,7 @@ export const AuthProvider = ({ children }) => {
       isAdmin,
       getAllUsers,
       getUserStats,
-      updateUser: updateUserById,
+      updateUserById,  // Fixed: renamed from updateUser
       deleteUser
     }}>
       {children}
@@ -236,5 +276,4 @@ export const AuthProvider = ({ children }) => {
   );
 };
 
-// ✅ Add this at the end
 export const useAuth = () => useContext(AuthContext);

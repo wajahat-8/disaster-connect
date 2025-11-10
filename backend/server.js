@@ -1,72 +1,67 @@
 const express = require('express');
-const mongoose = require('mongoose');
 const dotenv = require('dotenv');
 const cors = require('cors');
+const connectDB = require('./confiq/database');
+const errorHandler = require('./middleware/errorHandler');
 
-// Load environment variables from .env file
+// Load environment variables
 dotenv.config();
 
-// Validate required environment variables with helpful messages
-if (!process.env.JWT_SECRET) {
-  console.error('❌ ERROR: Missing JWT_SECRET in environment');
-  console.error('📝 Please create a .env file in the backend folder with:');
-  console.error('   JWT_SECRET=your-secret-key-here');
-  console.error('   MONGO_URI=mongodb://localhost:27017/disaster_connect');
-  process.exit(1);
-}
-
-// Import routes
-const routes = require('./routes');
+// Connect to database
+connectDB();
 
 const app = express();
 
-// --- MIDDLEWARE ---
-// Enable CORS with sensible defaults for Expo/React Native
+// Middleware
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 app.use(cors({
-  origin: '*',
-  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  origin: process.env.CLIENT_URL || '*',
+  credentials: true
 }));
 
-// Body parser to read JSON from request body
-app.use(express.json());
-
-// --- DATABASE CONNECTION ---
-const mongoUri = process.env.MONGO_URI;
-if (!mongoUri) {
-  console.error('❌ ERROR: Missing MONGO_URI in environment');
-  console.error('📝 Please create a .env file in the backend folder with:');
-  console.error('   MONGO_URI=mongodb://localhost:27017/disaster_connect');
-  console.error('   JWT_SECRET=your-secret-key-here');
-  process.exit(1);
+// Logging middleware (only in development)
+if (process.env.NODE_ENV === 'development') {
+  app.use((req, res, next) => {
+    console.log(`${req.method} ${req.path}`);
+    next();
+  });
 }
 
-mongoose.connect(mongoUri)
-  .then(() => console.log('✅ MongoDB connected successfully!'))
-  .catch(err => {
-    console.error('❌ MongoDB connection error:', err.message);
-    process.exit(1);
+// Health check route
+app.get('/', (req, res) => {
+  res.json({
+    success: true,
+    message: 'Disaster Connect API is running',
+    version: '1.0.0'
   });
+});
 
-// --- ROUTES ---
-// Health check for uptime monitoring
-app.get('/health', (req, res) => res.status(200).json({ status: 'ok' }));
+// API Routes
+app.use('/api/auth', require('./routes/authRoutes'));
+app.use('/api/users', require('./routes/userRoutes'));
 
-// Mount all API routes
-app.use('/api', routes);
+// 404 handler
+app.use((req, res) => {
+  res.status(404).json({
+    success: false,
+    message: 'Route not found'
+  });
+});
 
-// --- START SERVER ---
+// Error handler middleware (must be last)
+app.use(errorHandler);
+
 const PORT = process.env.PORT || 5000;
-const server = app.listen(PORT, () => {
-  console.log(`🚀 Server is running on port ${PORT}`);
+
+// Listen on all network interfaces (0.0.0.0) to allow connections from other devices
+const server = app.listen(PORT, '0.0.0.0', () => {
+  console.log(`Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
+  console.log(`Accessible at: http://localhost:${PORT} or http://192.168.10.6:${PORT}`);
 });
 
-// Graceful shutdown and unhandled errors
+// Handle unhandled promise rejections
 process.on('unhandledRejection', (err) => {
-  console.error('Unhandled Rejection:', err);
+  console.error(`Error: ${err.message}`);
   server.close(() => process.exit(1));
-});
-
-process.on('SIGINT', () => {
-  server.close(() => process.exit(0));
 });

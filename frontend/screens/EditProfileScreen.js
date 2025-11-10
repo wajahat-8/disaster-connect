@@ -14,9 +14,6 @@ import {
 } from 'react-native';
 import { useAuth } from '../context/AuthContext';
 
-// Remove the Ionicons import for now, or install the package
-// import Ionicons from '@expo/vector-icons/Ionicons';
-
 export default function EditProfileScreen({ navigation }) {
   const { user, updateProfile } = useAuth();
   const [loading, setLoading] = useState(false);
@@ -25,9 +22,9 @@ export default function EditProfileScreen({ navigation }) {
     name: user?.name || '',
     email: user?.email || '',
     phone: user?.phone || '',
-    location: user?.location || '',
+    location: user?.location?.address || user?.location || '',
     role: user?.role || 'user',
-    skills: user?.skills?.join(', ') || '',
+    skills: user?.skills ? (Array.isArray(user.skills) ? user.skills.join(', ') : user.skills) : '',
   });
 
   const [errors, setErrors] = useState({
@@ -49,6 +46,7 @@ export default function EditProfileScreen({ navigation }) {
       email: '',
       phone: '',
       location: '',
+      skills: '',
     };
 
     let isValid = true;
@@ -77,6 +75,12 @@ export default function EditProfileScreen({ navigation }) {
       isValid = false;
     }
 
+    // Skills validation for volunteers
+    if (form.role === 'volunteer' && !form.skills.trim()) {
+      newErrors.skills = 'Please add at least one skill';
+      isValid = false;
+    }
+
     setErrors(newErrors);
     return isValid;
   };
@@ -88,7 +92,27 @@ export default function EditProfileScreen({ navigation }) {
 
     setLoading(true);
     try {
-      const result = await updateProfile(form);
+      // Prepare the data for API
+      const profileData = {
+        name: form.name.trim(),
+        email: form.email.trim(),
+        phone: form.phone.trim(),
+        location: form.location.trim(),
+        role: form.role,
+      };
+
+      // Only include skills if user is volunteer and skills are provided
+      if (form.role === 'volunteer' && form.skills.trim()) {
+        // Convert comma-separated skills to array and trim each skill
+        profileData.skills = form.skills
+          .split(',')
+          .map(skill => skill.trim())
+          .filter(skill => skill.length > 0);
+      }
+
+      console.log('Sending profile data:', profileData); // Debug log
+
+      const result = await updateProfile(profileData);
       
       if (result.success) {
         Alert.alert('Success', 'Profile updated successfully');
@@ -97,10 +121,28 @@ export default function EditProfileScreen({ navigation }) {
         Alert.alert('Error', result.error || 'Failed to update profile');
       }
     } catch (error) {
-      Alert.alert('Error', 'An unexpected error occurred');
+      console.error('Profile update error:', error);
+      Alert.alert('Error', 'An unexpected error occurred. Please try again.');
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleBecomeVolunteer = () => {
+    Alert.alert(
+      'Become a Volunteer',
+      'Are you sure you want to become a volunteer? You can help others during emergencies and disasters.',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Yes, Continue',
+          onPress: () => setForm({ ...form, role: 'volunteer' }),
+        },
+      ]
+    );
   };
 
   const handleInputChange = (field, value) => {
@@ -123,16 +165,16 @@ export default function EditProfileScreen({ navigation }) {
       >
         {/* Header */}
         <View style={styles.header}>
-  <TouchableOpacity 
-    style={styles.backButton}
-    onPress={() => navigation.goBack()}
-  >
-    <Ionicons name="arrow-back" size={24} color="black" />
-  </TouchableOpacity>
+          <TouchableOpacity 
+            style={styles.backButton}
+            onPress={() => navigation.goBack()}
+          >
+            <Ionicons name="arrow-back" size={24} color="black" />
+          </TouchableOpacity>
 
-  <Text style={styles.title}>Edit Profile</Text>
-  <View style={styles.placeholder} />
-</View>
+          <Text style={styles.title}>Edit Profile</Text>
+          <View style={styles.placeholder} />
+        </View>
 
         <View style={styles.formContainer}>
           {/* Name Input */}
@@ -210,10 +252,17 @@ export default function EditProfileScreen({ navigation }) {
               </Text>
               <TouchableOpacity
                 style={styles.volunteerButton}
-                onPress={() => setForm({ ...form, role: 'volunteer' })}
+                onPress={handleBecomeVolunteer}
               >
                 <Text style={styles.volunteerButtonText}>Sign Up as Volunteer</Text>
               </TouchableOpacity>
+            </View>
+          )}
+
+          {/* Volunteer Badge */}
+          {(form.role === 'volunteer' || user?.role === 'volunteer') && (
+            <View style={styles.volunteerBadge}>
+              <Text style={styles.volunteerBadgeText}>🎗️ You are a Volunteer</Text>
             </View>
           )}
 
@@ -224,7 +273,7 @@ export default function EditProfileScreen({ navigation }) {
                 <Text style={styles.inputIcon}>🛠️</Text>
                 <TextInput
                   style={[styles.input, errors.skills ? styles.inputTextError : null]}
-                  placeholder="Skills (comma separated)"
+                  placeholder="Your skills (comma separated)"
                   placeholderTextColor="#999"
                   value={form.skills}
                   onChangeText={(value) => handleInputChange('skills', value)}
@@ -233,7 +282,7 @@ export default function EditProfileScreen({ navigation }) {
               </View>
               {errors.skills ? <Text style={styles.errorText}>{errors.skills}</Text> : null}
               <Text style={styles.helperText}>
-                Example: First Aid, Driving, Cooking, Construction, etc.
+                Example: First Aid, Driving, Cooking, Construction, Communication, etc.
               </Text>
             </View>
           )}
@@ -269,45 +318,6 @@ export default function EditProfileScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  volunteerSection: {
-    backgroundColor: '#f0f8ff',
-    padding: 20,
-    borderRadius: 16,
-    marginVertical: 15,
-    borderWidth: 1,
-    borderColor: '#e1e8ed',
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#2c3e50',
-    marginBottom: 8,
-  },
-  sectionDescription: {
-    fontSize: 14,
-    color: '#666',
-    marginBottom: 15,
-    lineHeight: 20,
-  },
-  volunteerButton: {
-    backgroundColor: '#27ae60',
-    borderRadius: 12,
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-  },
-  volunteerButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
-    textAlign: 'center',
-  },
-  helperText: {
-    fontSize: 12,
-    color: '#666',
-    marginTop: 4,
-    marginLeft: 16,
-    fontStyle: 'italic',
-  },
   container: {
     flex: 1,
     backgroundColor: '#f8f9fa',
@@ -341,11 +351,6 @@ const styles = StyleSheet.create({
     padding: 8,
     borderRadius: 12,
     backgroundColor: '#f1f3f4',
-  },
-  backButtonText: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#333',
   },
   title: {
     fontSize: 20,
@@ -407,6 +412,59 @@ const styles = StyleSheet.create({
     marginLeft: 16,
     marginBottom: 12,
     fontWeight: '500',
+  },
+  volunteerSection: {
+    backgroundColor: '#f0f8ff',
+    padding: 20,
+    borderRadius: 16,
+    marginVertical: 15,
+    borderWidth: 1,
+    borderColor: '#e1e8ed',
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#2c3e50',
+    marginBottom: 8,
+  },
+  sectionDescription: {
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 15,
+    lineHeight: 20,
+  },
+  volunteerButton: {
+    backgroundColor: '#27ae60',
+    borderRadius: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+  },
+  volunteerButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+  volunteerBadge: {
+    backgroundColor: '#e8f5e8',
+    padding: 15,
+    borderRadius: 12,
+    marginVertical: 10,
+    borderWidth: 1,
+    borderColor: '#27ae60',
+  },
+  volunteerBadgeText: {
+    color: '#27ae60',
+    fontSize: 16,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+  helperText: {
+    fontSize: 12,
+    color: '#666',
+    marginTop: 4,
+    marginLeft: 16,
+    fontStyle: 'italic',
   },
   saveButton: {
     backgroundColor: '#007AFF',

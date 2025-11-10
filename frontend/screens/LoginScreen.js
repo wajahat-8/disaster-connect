@@ -1,10 +1,9 @@
-import React, { useState, useContext } from 'react';
+import React, { useState } from 'react';
 import { View, TextInput, Button, StyleSheet, Text, Alert } from 'react-native';
-import { AuthContext } from '../context/AuthContext';
+import { useAuth } from '../context/AuthContext';
 
 export default function LoginScreen({ navigation }) {
-  const context = useContext(AuthContext);
-  const { login } = context;
+  const { login } = useAuth();
   const [form, setForm] = useState({ email: '', password: '' });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -19,10 +18,14 @@ export default function LoginScreen({ navigation }) {
     setLoading(true);
     try {
       const result = await login(form.email, form.password);
-      if (!result.success) {
-        setError(result.error || 'Login failed. Please try again.');
-        Alert.alert('Login Error', result.error || 'Login failed. Please try again.');
+      if (result.success) {
+        // Navigation is handled automatically by AppNavigator when user state is set
+        // No need to manually navigate - AppNavigator will switch to MainNavigator
+        return;
       }
+      // otherwise show error
+      setError(result.error || 'Login failed. Please try again.');
+      Alert.alert('Login Error', result.error || 'Login failed. Please try again.');
     } catch (e) {
       const message = e?.message || 'Login failed. Please try again.';
       setError(message);
