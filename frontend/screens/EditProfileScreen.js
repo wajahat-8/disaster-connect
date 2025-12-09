@@ -1,21 +1,21 @@
 import React, { useState } from 'react';
-import { Ionicons } from '@expo/vector-icons';
 import {
   View,
-  TextInput,
-  TouchableOpacity,
   StyleSheet,
   Alert,
-  ActivityIndicator,
-  Text,
   ScrollView,
   KeyboardAvoidingView,
   Platform,
+  Modal,
 } from 'react-native';
+import { WebView } from 'react-native-webview';
+import { Button, Text, useTheme, ActivityIndicator, IconButton, HelperText } from 'react-native-paper';
 import { useAuth } from '../context/AuthContext';
+import FormInput from '../components/FormInput'; // Reusing our custom input
 
 export default function EditProfileScreen({ navigation }) {
   const { user, updateProfile } = useAuth();
+  const theme = useTheme();
   const [loading, setLoading] = useState(false);
 
   const [form, setForm] = useState({
@@ -34,86 +34,71 @@ export default function EditProfileScreen({ navigation }) {
     location: '',
     skills: '',
   });
+  const [mapModalVisible, setMapModalVisible] = useState(false);
 
   const validateEmail = (email) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return emailRegex.test(email);
   };
 
-  const validateForm = () => {
-    const newErrors = {
-      name: '',
-      email: '',
-      phone: '',
-      location: '',
-      skills: '',
-    };
+  const safeTrim = (v) => {
+    if (v == null) return '';
+    if (typeof v === 'string') return v.trim();
+    if (typeof v === 'object') {
+      if (v.address && typeof v.address === 'string') return v.address.trim();
+      if ((v.lat || v.latitude) && (v.lng || v.longitude)) {
+        const lat = v.lat || v.latitude;
+        const lng = v.lng || v.longitude;
+        return `${Number(lat).toFixed(6)},${Number(lng).toFixed(6)}`;
+      }
+      try { return JSON.stringify(v); } catch (e) { return String(v); }
+    }
+    return String(v).trim();
+  };
 
+  const validateForm = () => {
+    const newErrors = { name: '', email: '', phone: '', location: '', skills: '' };
     let isValid = true;
 
-    // Name validation
-    if (!form.name.trim()) {
-      newErrors.name = 'Name is required';
-      isValid = false;
-    } else if (form.name.trim().length < 2) {
-      newErrors.name = 'Name must be at least 2 characters';
-      isValid = false;
-    }
+    const nameVal = safeTrim(form.name);
+    if (!nameVal) { newErrors.name = 'Name is required'; isValid = false; }
+    else if (nameVal.length < 2) { newErrors.name = 'Name must be at least 2 characters'; isValid = false; }
 
-    // Email validation
-    if (!form.email.trim()) {
-      newErrors.email = 'Email is required';
-      isValid = false;
-    } else if (!validateEmail(form.email.trim())) {
-      newErrors.email = 'Please enter a valid email address';
-      isValid = false;
-    }
+    const emailVal = safeTrim(form.email);
+    if (!emailVal) { newErrors.email = 'Email is required'; isValid = false; }
+    else if (!validateEmail(emailVal)) { newErrors.email = 'Please enter a valid email address'; isValid = false; }
 
-    // Phone validation (optional)
-    if (form.phone && !/^[\+]?[0-9\s\-\(\)]{10,}$/.test(form.phone)) {
-      newErrors.phone = 'Please enter a valid phone number';
-      isValid = false;
-    }
+    const phoneVal = safeTrim(form.phone);
+    if (phoneVal && !/^[\+]?[0-9\s\-\(\)]{10,}$/.test(phoneVal)) { newErrors.phone = 'Please enter a valid phone number'; isValid = false; }
 
-    // Skills validation for volunteers
-    if (form.role === 'volunteer' && !form.skills.trim()) {
-      newErrors.skills = 'Please add at least one skill';
-      isValid = false;
-    }
+    const skillsVal = safeTrim(form.skills);
+    if (form.role === 'volunteer' && !skillsVal) { newErrors.skills = 'Please add at least one skill'; isValid = false; }
 
     setErrors(newErrors);
     return isValid;
   };
 
   const handleSave = async () => {
-    if (!validateForm()) {
-      return;
-    }
+    if (!validateForm()) return;
 
     setLoading(true);
     try {
-      // Prepare the data for API
       const profileData = {
-        name: form.name.trim(),
-        email: form.email.trim(),
-        phone: form.phone.trim(),
-        location: form.location.trim(),
+        name: safeTrim(form.name),
+        email: safeTrim(form.email),
+        phone: safeTrim(form.phone),
+        location: safeTrim(form.location),
         role: form.role,
       };
 
-      // Only include skills if user is volunteer and skills are provided
-      if (form.role === 'volunteer' && form.skills.trim()) {
-        // Convert comma-separated skills to array and trim each skill
-        profileData.skills = form.skills
-          .split(',')
-          .map(skill => skill.trim())
-          .filter(skill => skill.length > 0);
+      if (form.role === 'volunteer' && safeTrim(form.skills)) {
+        profileData.skills = form.skills.split(',').map(skill => safeTrim(skill)).filter(skill => skill.length > 0);
+      } else if (form.role === 'user') {
+        profileData.skills = []; // Clear skills if reverting to user
       }
 
-      console.log('Sending profile data:', profileData); // Debug log
-
       const result = await updateProfile(profileData);
-      
+
       if (result.success) {
         Alert.alert('Success', 'Profile updated successfully');
         navigation.goBack();
@@ -133,13 +118,22 @@ export default function EditProfileScreen({ navigation }) {
       'Become a Volunteer',
       'Are you sure you want to become a volunteer? You can help others during emergencies and disasters.',
       [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Yes, Continue', onPress: () => setForm({ ...form, role: 'volunteer' }) },
+      ]
+    );
+  };
+
+  const handleStopVolunteering = () => {
+    Alert.alert(
+      'Stop Volunteering?',
+      'Are you sure you want to stop being a volunteer? You will lose access to volunteer tasks.',
+      [
+        { text: 'Cancel', style: 'cancel' },
         {
-          text: 'Cancel',
-          style: 'cancel',
-        },
-        {
-          text: 'Yes, Continue',
-          onPress: () => setForm({ ...form, role: 'volunteer' }),
+          text: 'Yes, Stop',
+          style: 'destructive',
+          onPress: () => setForm({ ...form, role: 'user', skills: '' })
         },
       ]
     );
@@ -147,369 +141,234 @@ export default function EditProfileScreen({ navigation }) {
 
   const handleInputChange = (field, value) => {
     setForm({ ...form, [field]: value });
-    // Clear error when user starts typing
-    if (errors[field]) {
-      setErrors({ ...errors, [field]: '' });
+    if (errors[field]) setErrors({ ...errors, [field]: '' });
+  };
+
+  const generatePickerMapHTML = () => {
+    // NOTE: replace YOUR_GOOGLE_MAPS_API_KEY with a valid key
+    const locStr = safeTrim(form.location);
+    let centerLat = 37.78825;
+    let centerLng = -122.4324;
+
+    if (locStr && locStr.includes(',')) {
+      const parts = locStr.split(',').map(p => p.trim());
+      const maybeLat = parseFloat(parts[0]);
+      const maybeLng = parseFloat(parts[1]);
+      if (!isNaN(maybeLat) && !isNaN(maybeLng)) {
+        centerLat = maybeLat;
+        centerLng = maybeLng;
+      }
+    } else if (user?.location && typeof user.location === 'object') {
+      const lat = user.location.lat || user.location.latitude;
+      const lng = user.location.lng || user.location.longitude;
+      if (lat && lng) {
+        centerLat = Number(lat);
+        centerLng = Number(lng);
+      }
+    }
+    return `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <style>html, body, #map { height: 100%; margin: 0; padding: 0; }</style>
+        </head>
+        <body>
+          <div id="map"></div>
+          <script>
+            let map; let marker;
+            function initMap() {
+              map = new google.maps.Map(document.getElementById('map'), {
+                center: { lat: ${centerLat}, lng: ${centerLng} },
+                zoom: 12,
+              });
+              map.addListener('click', function(e) {
+                const lat = e.latLng.lat();
+                const lng = e.latLng.lng();
+                if (marker) marker.setMap(null);
+                marker = new google.maps.Marker({ position: { lat, lng }, map });
+                window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'pickLocation', lat, lng }));
+              });
+            }
+          </script>
+          <script src="https://maps.googleapis.com/maps/api/js?key=YOUR_GOOGLE_MAPS_API_KEY&callback=initMap" async defer></script>
+        </body>
+      </html>
+    `;
+  };
+
+  const handlePickerMessage = async (event) => {
+    try {
+      const data = JSON.parse(event.nativeEvent.data);
+      if (data.type === 'pickLocation') {
+        const lat = data.lat;
+        const lng = data.lng;
+        const locString = `${lat.toFixed(6)},${lng.toFixed(6)}`;
+        setForm({ ...form, location: locString });
+        setMapModalVisible(false);
+      }
+    } catch (error) {
+      console.error('Error parsing picker message:', error);
     }
   };
 
   return (
     <KeyboardAvoidingView
-      style={styles.container}
+      style={{ flex: 1, backgroundColor: theme.colors.background }}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
-      <ScrollView 
-        style={styles.scrollView}
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
-      >
-        {/* Header */}
+      <ScrollView contentContainerStyle={styles.container}>
         <View style={styles.header}>
-          <TouchableOpacity 
-            style={styles.backButton}
-            onPress={() => navigation.goBack()}
-          >
-            <Ionicons name="arrow-back" size={24} color="black" />
-          </TouchableOpacity>
-
-          <Text style={styles.title}>Edit Profile</Text>
-          <View style={styles.placeholder} />
+          <IconButton icon="arrow-left" onPress={() => navigation.goBack()} size={24} />
+          <Text variant="headlineSmall" style={styles.title}>Edit Profile</Text>
         </View>
 
-        <View style={styles.formContainer}>
-          {/* Name Input */}
-          <View style={styles.inputGroup}>
-            <View style={[styles.inputContainer, errors.name ? styles.inputError : null]}>
-              <Text style={styles.inputIcon}>👤</Text>
-              <TextInput
-                style={[styles.input, errors.name ? styles.inputTextError : null]}
-                placeholder="Full Name"
-                placeholderTextColor="#999"
-                value={form.name}
-                onChangeText={(value) => handleInputChange('name', value)}
-              />
-            </View>
-            {errors.name ? <Text style={styles.errorText}>{errors.name}</Text> : null}
-          </View>
+        <FormInput
+          label="Full Name"
+          value={form.name}
+          onChangeText={(v) => handleInputChange('name', v)}
+          error={errors.name}
+        />
 
-          {/* Email Input */}
-          <View style={styles.inputGroup}>
-            <View style={[styles.inputContainer, errors.email ? styles.inputError : null]}>
-              <Text style={styles.inputIcon}>📧</Text>
-              <TextInput
-                style={[styles.input, errors.email ? styles.inputTextError : null]}
-                placeholder="Email Address"
-                placeholderTextColor="#999"
-                value={form.email}
-                onChangeText={(value) => handleInputChange('email', value)}
-                keyboardType="email-address"
-                autoCapitalize="none"
-                autoComplete="email"
-              />
-            </View>
-            {errors.email ? <Text style={styles.errorText}>{errors.email}</Text> : null}
-          </View>
+        <FormInput
+          label="Email Address"
+          value={form.email}
+          onChangeText={(v) => handleInputChange('email', v)}
+          keyboardType="email-address"
+          autoCapitalize="none"
+          error={errors.email}
+        />
 
-          {/* Phone Input */}
-          <View style={styles.inputGroup}>
-            <View style={[styles.inputContainer, errors.phone ? styles.inputError : null]}>
-              <Text style={styles.inputIcon}>📞</Text>
-              <TextInput
-                style={[styles.input, errors.phone ? styles.inputTextError : null]}
-                placeholder="Phone Number (Optional)"
-                placeholderTextColor="#999"
-                value={form.phone}
-                onChangeText={(value) => handleInputChange('phone', value)}
-                keyboardType="phone-pad"
-                autoComplete="tel"
-              />
-            </View>
-            {errors.phone ? <Text style={styles.errorText}>{errors.phone}</Text> : null}
-          </View>
+        <FormInput
+          label="Phone Number"
+          value={form.phone}
+          onChangeText={(v) => handleInputChange('phone', v)}
+          keyboardType="phone-pad"
+          error={errors.phone}
+        />
 
-          {/* Location Input */}
-          <View style={styles.inputGroup}>
-            <View style={[styles.inputContainer, errors.location ? styles.inputError : null]}>
-              <Text style={styles.inputIcon}>📍</Text>
-              <TextInput
-                style={[styles.input, errors.location ? styles.inputTextError : null]}
-                placeholder="Location (Optional)"
-                placeholderTextColor="#999"
-                value={form.location}
-                onChangeText={(value) => handleInputChange('location', value)}
-                autoComplete="address-line1"
-              />
-            </View>
-            {errors.location ? <Text style={styles.errorText}>{errors.location}</Text> : null}
-          </View>
-
-          {/* Volunteer Section */}
-          {form.role === 'user' && (
-            <View style={styles.volunteerSection}>
-              <Text style={styles.sectionTitle}>Become a Volunteer</Text>
-              <Text style={styles.sectionDescription}>
-                As a volunteer, you can help others during disasters and emergencies.
-              </Text>
-              <TouchableOpacity
-                style={styles.volunteerButton}
-                onPress={handleBecomeVolunteer}
-              >
-                <Text style={styles.volunteerButtonText}>Sign Up as Volunteer</Text>
-              </TouchableOpacity>
-            </View>
-          )}
-
-          {/* Volunteer Badge */}
-          {(form.role === 'volunteer' || user?.role === 'volunteer') && (
-            <View style={styles.volunteerBadge}>
-              <Text style={styles.volunteerBadgeText}>🎗️ You are a Volunteer</Text>
-            </View>
-          )}
-
-          {/* Skills Input - Show only if volunteer */}
-          {(form.role === 'volunteer' || user?.role === 'volunteer') && (
-            <View style={styles.inputGroup}>
-              <View style={[styles.inputContainer, errors.skills ? styles.inputError : null]}>
-                <Text style={styles.inputIcon}>🛠️</Text>
-                <TextInput
-                  style={[styles.input, errors.skills ? styles.inputTextError : null]}
-                  placeholder="Your skills (comma separated)"
-                  placeholderTextColor="#999"
-                  value={form.skills}
-                  onChangeText={(value) => handleInputChange('skills', value)}
-                  multiline={true}
-                />
-              </View>
-              {errors.skills ? <Text style={styles.errorText}>{errors.skills}</Text> : null}
-              <Text style={styles.helperText}>
-                Example: First Aid, Driving, Cooking, Construction, Communication, etc.
-              </Text>
-            </View>
-          )}
-
-          {/* Save Button */}
-          <TouchableOpacity
-            style={[styles.saveButton, loading && styles.saveButtonDisabled]}
-            onPress={handleSave}
-            disabled={loading}
-          >
-            {loading ? (
-              <ActivityIndicator size="small" color="#fff" />
-            ) : (
-              <View style={styles.buttonContent}>
-                <Text style={styles.buttonIcon}>💾</Text>
-                <Text style={styles.saveButtonText}>Save Changes</Text>
-              </View>
-            )}
-          </TouchableOpacity>
-
-          {/* Cancel Button */}
-          <TouchableOpacity
-            style={styles.cancelButton}
-            onPress={() => navigation.goBack()}
-            disabled={loading}
-          >
-            <Text style={styles.cancelButtonText}>Cancel</Text>
-          </TouchableOpacity>
+        <View style={styles.locationContainer}>
+          <FormInput
+            label="Location"
+            value={form.location}
+            onChangeText={(v) => handleInputChange('location', v)}
+            error={errors.location}
+            style={{ flex: 1 }}
+          />
+          <Button mode="outlined" onPress={() => setMapModalVisible(true)} style={styles.mapBtn}>
+            Map
+          </Button>
         </View>
+
+        {form.role === 'user' && (
+          <View style={[styles.volunteerSection, { backgroundColor: theme.colors.surface, borderColor: theme.colors.outline }]}>
+            <Text variant="titleMedium" style={{ marginBottom: 5 }}>Become a Volunteer</Text>
+            <Text variant="bodyMedium" style={{ marginBottom: 15, color: theme.colors.onSurfaceVariant }}>
+              As a volunteer, you can help others during disasters and emergencies.
+            </Text>
+            <Button mode="contained-tonal" onPress={handleBecomeVolunteer}>
+              Sign Up as Volunteer
+            </Button>
+          </View>
+        )}
+
+        {(form.role === 'volunteer') && (
+          <View style={styles.section}>
+            <Text variant="labelLarge" style={{ color: theme.colors.primary, marginBottom: 5 }}>
+              🎗️ You are a Volunteer
+            </Text>
+            <FormInput
+              label="Skills (comma separated)"
+              value={form.skills}
+              onChangeText={(v) => handleInputChange('skills', v)}
+              multiline
+              error={errors.skills}
+            />
+            <HelperText type="info">Example: First Aid, Driving, Cooking</HelperText>
+
+            <Button
+              mode="outlined"
+              textColor={theme.colors.error}
+              style={{ marginTop: 10, borderColor: theme.colors.error }}
+              onPress={handleStopVolunteering}
+            >
+              Stop Volunteering (Revert to User)
+            </Button>
+          </View>
+        )}
+
+        <Button
+          mode="contained"
+          onPress={handleSave}
+          loading={loading}
+          disabled={loading}
+          icon="content-save"
+          style={styles.saveButton}
+        >
+          Save Changes
+        </Button>
+
       </ScrollView>
+
+      <Modal
+        visible={mapModalVisible}
+        animationType="slide"
+        onRequestClose={() => setMapModalVisible(false)}
+      >
+        <View style={{ flex: 1 }}>
+          <WebView
+            originWhitelist={["*"]}
+            source={{ html: generatePickerMapHTML() }}
+            onMessage={handlePickerMessage}
+            javaScriptEnabled={true}
+            domStorageEnabled={true}
+          />
+          <Button mode="contained" onPress={() => setMapModalVisible(false)} style={{ margin: 20 }}>
+            Close Map
+          </Button>
+        </View>
+      </Modal>
     </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
-    backgroundColor: '#f8f9fa',
-  },
-  scrollView: {
-    flex: 1,
-  },
-  scrollContent: {
     flexGrow: 1,
+    padding: 20,
+    paddingTop: 40,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingTop: 60,
-    paddingBottom: 30,
-    backgroundColor: '#fff',
-    borderBottomLeftRadius: 20,
-    borderBottomRightRadius: 20,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 3.84,
-    elevation: 5,
-  },
-  backButton: {
-    padding: 8,
-    borderRadius: 12,
-    backgroundColor: '#f1f3f4',
+    marginBottom: 20,
   },
   title: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#333',
-  },
-  placeholder: {
-    width: 40,
-  },
-  formContainer: {
     flex: 1,
-    paddingHorizontal: 25,
-    paddingTop: 30,
-    paddingBottom: 40,
+    textAlign: 'center',
+    marginRight: 32, // balance back icon
+    fontWeight: 'bold',
   },
-  inputGroup: {
-    marginBottom: 8,
-  },
-  inputContainer: {
+  locationContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    paddingHorizontal: 16,
-    marginBottom: 4,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.08,
-    shadowRadius: 6,
-    elevation: 3,
-    borderWidth: 1,
-    borderColor: '#f1f3f4',
+    gap: 10,
   },
-  inputError: {
-    borderColor: '#FF3B30',
-    shadowColor: '#FF3B30',
-    shadowOpacity: 0.1,
-  },
-  inputTextError: {
-    color: '#FF3B30',
-  },
-  inputIcon: {
-    marginRight: 12,
-    fontSize: 16,
-  },
-  input: {
-    flex: 1,
-    paddingVertical: 18,
-    fontSize: 16,
-    color: '#333',
-    fontWeight: '500',
-  },
-  errorText: {
-    color: '#FF3B30',
-    fontSize: 12,
-    marginLeft: 16,
-    marginBottom: 12,
-    fontWeight: '500',
+  mapBtn: {
+    marginTop: 6,
   },
   volunteerSection: {
-    backgroundColor: '#f0f8ff',
-    padding: 20,
-    borderRadius: 16,
-    marginVertical: 15,
+    borderRadius: 10,
     borderWidth: 1,
-    borderColor: '#e1e8ed',
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#2c3e50',
-    marginBottom: 8,
-  },
-  sectionDescription: {
-    fontSize: 14,
-    color: '#666',
-    marginBottom: 15,
-    lineHeight: 20,
-  },
-  volunteerButton: {
-    backgroundColor: '#27ae60',
-    borderRadius: 12,
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-  },
-  volunteerButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
-    textAlign: 'center',
-  },
-  volunteerBadge: {
-    backgroundColor: '#e8f5e8',
     padding: 15,
-    borderRadius: 12,
-    marginVertical: 10,
-    borderWidth: 1,
-    borderColor: '#27ae60',
+    marginVertical: 15,
   },
-  volunteerBadgeText: {
-    color: '#27ae60',
-    fontSize: 16,
-    fontWeight: '600',
-    textAlign: 'center',
-  },
-  helperText: {
-    fontSize: 12,
-    color: '#666',
-    marginTop: 4,
-    marginLeft: 16,
-    fontStyle: 'italic',
+  section: {
+    marginBottom: 10,
   },
   saveButton: {
-    backgroundColor: '#007AFF',
-    borderRadius: 16,
-    paddingVertical: 18,
     marginTop: 20,
-    marginBottom: 15,
-    shadowColor: '#007AFF',
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 6,
-  },
-  saveButtonDisabled: {
-    opacity: 0.7,
-  },
-  buttonContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  buttonIcon: {
-    marginRight: 8,
-    fontSize: 16,
-  },
-  saveButtonText: {
-    color: '#fff',
-    fontSize: 18,
-    fontWeight: '600',
-    textAlign: 'center',
-  },
-  cancelButton: {
-    paddingVertical: 16,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: '#ddd',
-    backgroundColor: '#fff',
-  },
-  cancelButtonText: {
-    color: '#666',
-    fontSize: 16,
-    fontWeight: '500',
-    textAlign: 'center',
+    marginBottom: 30,
+    paddingVertical: 5,
   },
 });

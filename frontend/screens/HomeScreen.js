@@ -1,94 +1,130 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import { Text, Avatar, Card, useTheme, Chip, IconButton } from 'react-native-paper';
+import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../context/AuthContext';
 
 const HomeScreen = ({ navigation }) => {
   const { user, logout } = useAuth();
+  const theme = useTheme();
+
+  const menuItems = [
+    { key: 'profile', label: 'My Profile', icon: 'person-outline', onPress: () => navigation.navigate('Profile') },
+    { key: 'report', label: 'Report Disaster', icon: 'alert-circle-outline', onPress: () => navigation.navigate('ReportDisaster') },
+    { key: 'map', label: 'View Disaster Map', icon: 'map-outline', onPress: () => navigation.navigate('ViewMap') },
+    { key: 'shelters', label: 'Shelter Finder', icon: 'location-outline', onPress: () => { } },
+  ];
+
+  if (user?.role === 'volunteer') {
+    menuItems.push({ key: 'voltasks', label: 'Volunteer Tasks', icon: 'hand-left-outline', onPress: () => { } });
+  }
+
+  if (user?.role === 'admin') {
+    menuItems.push({ key: 'admin', label: 'Admin Dashboard', icon: 'speedometer-outline', onPress: () => { } });
+    menuItems.push({ key: 'users', label: 'User Management', icon: 'people-outline', onPress: () => navigation.navigate('AdminUsers') });
+  }
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.welcome}>Welcome, {user?.name}!</Text>
-      <Text style={styles.role}>Role: {user?.role}</Text>
-      
-      <View style={styles.menu}>
-        <TouchableOpacity
-          style={styles.menuItem}
-          onPress={() => navigation.navigate('Profile')}
-        >
-          <Text style={styles.menuText}>My Profile</Text>
-        </TouchableOpacity>
+    <ScrollView contentContainerStyle={[styles.container, { backgroundColor: theme.colors.background }]}>
 
-        {/* Add more menu items for other modules */}
-        <TouchableOpacity style={styles.menuItem}>
-          <Text style={styles.menuText}>Disaster Reports</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.menuItem}>
-          <Text style={styles.menuText}>Shelter Finder</Text>
-        </TouchableOpacity>
-
-        {user?.role === 'volunteer' && (
-          <TouchableOpacity style={styles.menuItem}>
-            <Text style={styles.menuText}>Volunteer Tasks</Text>
-          </TouchableOpacity>
-        )}
-
-        {user?.role === 'admin' && (
-          <>
-            <TouchableOpacity style={styles.menuItem}>
-              <Text style={styles.menuText}>Admin Dashboard</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.menuItem}
-              onPress={() => navigation.navigate('AdminUsers')}
-            >
-              <Text style={styles.menuText}>User Management</Text>
-            </TouchableOpacity>
-          </>
-        )}
-
-        <TouchableOpacity
-          style={[styles.menuItem, { backgroundColor: '#e74c3c' }]}
+      {/* Header Section */}
+      <View style={styles.header}>
+        <View style={styles.userInfo}>
+          <Avatar.Text
+            size={50}
+            label={(user?.name || 'U').split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase()}
+            style={{ backgroundColor: theme.colors.primaryContainer }}
+            color={theme.colors.onPrimaryContainer}
+          />
+          <View style={styles.texts}>
+            <Text variant="bodyMedium" style={{ color: theme.colors.secondary }}>Welcome back,</Text>
+            <Text variant="titleMedium" style={{ fontWeight: 'bold' }}>{user?.name || 'User'}</Text>
+          </View>
+        </View>
+        <IconButton
+          icon="logout"
+          size={24}
+          iconColor={theme.colors.error}
           onPress={logout}
-        >
-          <Text style={styles.menuText}>Logout</Text>
-        </TouchableOpacity>
+          style={{ margin: 0 }}
+        />
       </View>
-    </View>
+
+      <View style={styles.roleContainer}>
+        <Chip icon="account-check" style={{ backgroundColor: theme.colors.secondaryContainer }}>
+          Role: {(user?.role || 'User').toUpperCase()}
+        </Chip>
+      </View>
+
+      {/* Grid Menu */}
+      <View style={styles.grid}>
+        {menuItems.map(item => (
+          <Card
+            key={item.key}
+            style={[styles.card, { backgroundColor: theme.colors.surface }]}
+            onPress={item.key === 'logout' ? logout : item.onPress}
+            mode="elevated"
+          >
+            <Card.Content style={styles.cardContent}>
+              <Ionicons
+                name={item.icon}
+                size={32}
+                color={item.key === 'logout' ? theme.colors.error : theme.colors.primary}
+                style={{ marginBottom: 10 }}
+              />
+              <Text
+                variant="labelLarge"
+                style={{
+                  textAlign: 'center',
+                  color: item.key === 'logout' ? theme.colors.error : theme.colors.onSurface
+                }}
+              >
+                {item.label}
+              </Text>
+            </Card.Content>
+          </Card>
+        ))}
+      </View>
+    </ScrollView>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
+    flexGrow: 1,
     padding: 20,
-    backgroundColor: '#fff',
   },
-  welcome: {
-    fontSize: 24,
-    fontWeight: 'bold',
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     marginBottom: 10,
-    color: '#2c3e50',
   },
-  role: {
-    fontSize: 16,
-    color: '#7f8c8d',
-    marginBottom: 30,
-  },
-  menu: {
-    gap: 15,
-  },
-  menuItem: {
-    backgroundColor: '#3498db',
-    padding: 20,
-    borderRadius: 10,
+  userInfo: {
+    flexDirection: 'row',
     alignItems: 'center',
   },
-  menuText: {
-    color: '#fff',
-    fontSize: 18,
-    fontWeight: 'bold',
+  texts: {
+    marginLeft: 15,
+  },
+  roleContainer: {
+    flexDirection: 'row',
+    marginBottom: 25,
+  },
+  grid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    gap: 10,
+  },
+  card: {
+    width: '48%',
+    marginBottom: 12,
+  },
+  cardContent: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 10,
   },
 });
 

@@ -1,12 +1,14 @@
-// API Configuration for React Native
-// For Android emulator, use: http://10.0.2.2:5000/api
-// For iOS simulator, use: http://localhost:5000/api
-// For physical device, use your computer's IP: http://YOUR_IP:5000/api
+import Constants from 'expo-constants';
 
-// Your computer's IP address (found via: ipconfig on Windows, ifconfig on Mac/Linux)
-const YOUR_COMPUTER_IP = '192.168.10.6'; // Update this if your IP changes
+// Dynamically retrieve the host IP address
+// This works for Expo Go (Android/iOS) and automatically picks up your PC's IP
+const debuggerHost = Constants.expoConfig?.hostUri || Constants.manifest2?.extra?.expoGo?.debuggerHost || Constants.manifest?.debuggerHost || 'localhost';
+const localhost = debuggerHost.split(':')[0];
 
-export const API_BASE_URL = __DEV__ 
-  ? `http://${YOUR_COMPUTER_IP}:5000/api`  // Use your computer's IP for physical device
+// Use the detected IP for mobile, or falling back to localhost
+const YOUR_COMPUTER_IP = localhost || 'localhost';
+
+export const API_BASE_URL = __DEV__
+  ? `http://${YOUR_COMPUTER_IP}:5000/api`
   : 'https://your-production-api.com/api'; // Production URL
 

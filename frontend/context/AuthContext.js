@@ -23,6 +23,29 @@ export const AuthProvider = ({ children }) => {
     }
   }, [token]);
 
+  // Update user data in context and storage
+  const updateUser = async (userData) => {
+    try {
+      setUser(userData);
+      await AsyncStorage.setItem('userData', JSON.stringify(userData));
+    } catch (error) {
+      console.log('Error updating user:', error);
+      throw error;
+    }
+  };
+
+  const logout = async () => {
+    try {
+      await AsyncStorage.removeItem('userToken');
+      await AsyncStorage.removeItem('userData');
+      setUser(null);
+      setToken(null);
+      delete api.defaults.headers.common['Authorization'];
+    } catch (error) {
+      console.log('Logout error:', error);
+    }
+  };
+
   const checkAuthState = async () => {
     try {
       const storedToken = await AsyncStorage.getItem('userToken');
@@ -129,28 +152,6 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const logout = async () => {
-    try {
-      await AsyncStorage.removeItem('userToken');
-      await AsyncStorage.removeItem('userData');
-      setUser(null);
-      setToken(null);
-      delete api.defaults.headers.common['Authorization'];
-    } catch (error) {
-      console.log('Logout error:', error);
-    }
-  };
-
-  // Update user data in context and storage
-  const updateUser = async (userData) => {
-    try {
-      setUser(userData);
-      await AsyncStorage.setItem('userData', JSON.stringify(userData));
-    } catch (error) {
-      console.log('Error updating user:', error);
-      throw error;
-    }
-  };
 
   // Update profile via API
   const updateProfile = async (profileData) => {

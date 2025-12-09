@@ -173,7 +173,7 @@ exports.logout = async (req, res) => {
   try {
     // In JWT, logout is handled client-side by removing the token
     // This endpoint is for consistency and future enhancements (e.g., token blacklisting)
-    
+
     res.status(200).json({
       success: true,
       message: 'Logged out successfully'
@@ -183,6 +183,96 @@ exports.logout = async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Logout failed'
+    });
+  }
+};
+
+// @desc    Verify user for password reset
+// @route   POST /api/auth/verify-user
+// @access  Public
+exports.verifyUser = async (req, res) => {
+  try {
+    const { name, email } = req.body;
+
+    if (!name || !email) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please provide both name and email'
+      });
+    }
+
+    const user = await User.findOne({ email });
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    // Case-insensitive name check
+    if (user.name.toLowerCase() !== name.toLowerCase()) {
+      return res.status(400).json({
+        success: false,
+        message: 'Name does not match our records'
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'User verified successfully'
+    });
+  } catch (error) {
+    console.error('Verify user error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Verification failed'
+    });
+  }
+};
+
+// @desc    Reset password
+// @route   POST /api/auth/reset-password
+// @access  Public
+exports.resetPassword = async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please provide email and new password'
+      });
+    }
+
+    if (password.length < 6) {
+      return res.status(400).json({
+        success: false,
+        message: 'Password must be at least 6 characters'
+      });
+    }
+
+    const user = await User.findOne({ email });
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    user.password = password;
+    await user.save();
+
+    res.status(200).json({
+      success: true,
+      message: 'Password updated successfully'
+    });
+  } catch (error) {
+    console.error('Reset password error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to reset password'
     });
   }
 };

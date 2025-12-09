@@ -15,10 +15,10 @@ const app = express();
 // Middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(cors({
-  origin: process.env.CLIENT_URL || '*',
-  credentials: true
-}));
+app.use(cors()); // Allow all origins for development (Mobile app needs this)
+
+// Serve uploaded files
+app.use('/uploads', express.static('uploads'));
 
 // Logging middleware (only in development)
 if (process.env.NODE_ENV === 'development') {
@@ -40,6 +40,8 @@ app.get('/', (req, res) => {
 // API Routes
 app.use('/api/auth', require('./routes/authRoutes'));
 app.use('/api/users', require('./routes/userRoutes'));
+app.use('/api/disasters', require('./routes/disasterRoutes'));
+app.use('/api/shelters', require('./routes/shelterRoutes'));
 
 // 404 handler
 app.use((req, res) => {

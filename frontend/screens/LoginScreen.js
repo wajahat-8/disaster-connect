@@ -1,9 +1,13 @@
 import React, { useState } from 'react';
-import { View, TextInput, Button, StyleSheet, Text, Alert } from 'react-native';
+import { View, StyleSheet, Alert } from 'react-native';
+import { Button, Text, useTheme, Headline } from 'react-native-paper';
 import { useAuth } from '../context/AuthContext';
+import FormInput from '../components/FormInput';
+import api from '../api/apiClient';
 
 export default function LoginScreen({ navigation }) {
   const { login } = useAuth();
+  const theme = useTheme();
   const [form, setForm] = useState({ email: '', password: '' });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -19,17 +23,16 @@ export default function LoginScreen({ navigation }) {
     try {
       const result = await login(form.email, form.password);
       if (result.success) {
-        // Navigation is handled automatically by AppNavigator when user state is set
-        // No need to manually navigate - AppNavigator will switch to MainNavigator
         return;
       }
-      // otherwise show error
       setError(result.error || 'Login failed. Please try again.');
       Alert.alert('Login Error', result.error || 'Login failed. Please try again.');
     } catch (e) {
       const message = e?.message || 'Login failed. Please try again.';
-      setError(message);
-      Alert.alert('Login Error', message);
+      // DEBUG: Show where it tried to connect
+      const debugMsg = `${message}\n\nTarget: ${api.defaults.baseURL}`;
+      setError(debugMsg);
+      Alert.alert('Login Error', debugMsg);
     } finally {
       setLoading(false);
     }
@@ -37,28 +40,56 @@ export default function LoginScreen({ navigation }) {
 
   return (
     <View style={styles.container}>
-      <TextInput
-        style={styles.input}
-        placeholder="Email"
+      <Text variant="headlineMedium" style={[styles.title, { color: theme.colors.primary }]}>
+        Welcome Back
+      </Text>
+
+      <FormInput
+        label="Email"
         value={form.email}
         onChangeText={(t) => setForm({ ...form, email: t })}
         keyboardType="email-address"
         autoCapitalize="none"
       />
-      <TextInput
-        style={styles.input}
-        placeholder="Password"
-        secureTextEntry
+
+      <FormInput
+        label="Password"
         value={form.password}
         onChangeText={(t) => setForm({ ...form, password: t })}
+        secureTextEntry
       />
-      {error ? <Text style={styles.error}>{error}</Text> : null}
+
+      {error ? (
+        <Text style={{ color: theme.colors.error, textAlign: 'center', marginBottom: 10 }}>
+          {error}
+        </Text>
+      ) : null}
+
       <Button
-        title={loading ? 'Logging in...' : 'Login'}
+        mode="contained"
         onPress={handleLogin}
+        loading={loading}
         disabled={loading}
-      />
-      <Button title="Register" onPress={() => navigation.navigate('Register')} />
+        style={styles.button}
+      >
+        Login
+      </Button>
+
+      <Button
+        mode="text"
+        onPress={() => navigation.navigate('ForgotPassword')}
+        style={{ marginTop: 10 }}
+      >
+        Forgot Password?
+      </Button>
+
+      <Button
+        mode="text"
+        onPress={() => navigation.navigate('Register')}
+        style={styles.textButton}
+      >
+        Don't have an account? Register
+      </Button>
     </View>
   );
 }
@@ -68,18 +99,18 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 20,
     justifyContent: 'center',
+    backgroundColor: '#fff',
   },
-  input: {
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 5,
-    padding: 10,
-    marginBottom: 15,
-    fontSize: 16,
-  },
-  error: {
-    color: 'red',
-    marginBottom: 10,
+  title: {
     textAlign: 'center',
+    marginBottom: 30,
+    fontWeight: 'bold',
   },
+  button: {
+    marginTop: 10,
+    paddingVertical: 5,
+  },
+  textButton: {
+    marginTop: 10,
+  }
 });
