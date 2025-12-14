@@ -42,6 +42,8 @@ app.use('/api/auth', require('./routes/authRoutes'));
 app.use('/api/users', require('./routes/userRoutes'));
 app.use('/api/disasters', require('./routes/disasterRoutes'));
 app.use('/api/shelters', require('./routes/shelterRoutes'));
+app.use('/api/notifications', require('./routes/notificationRoutes'));
+app.use('/api/alerts', require('./routes/alertRoutes'));
 
 // 404 handler
 app.use((req, res) => {
