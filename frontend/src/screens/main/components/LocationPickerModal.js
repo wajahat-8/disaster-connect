@@ -1,100 +1,113 @@
-import React from 'react';
-import { View, Modal, StyleSheet } from 'react-native';
-import { WebView } from 'react-native-webview';
+import React, { useState, useEffect } from 'react';
+import { View, Modal, StyleSheet, Dimensions } from 'react-native';
+import MapView, { Marker } from 'react-native-maps';
 import AppButton from '../../../components/common/AppButton';
 
 /**
- * Modal component for picking a location on a Google Maps WebView.
- * @param {Object} props
- * @param {boolean} props.visible - Whether the modal is visible
- * @param {Function} props.onClose - Callback when modal is closed
- * @param {Function} props.onLocationSelected - Callback when location is picked (lat, lng)
- * @param {number} props.initialLat - Initial latitude for map center
- * @param {number} props.initialLng - Initial longitude for map center
+ * Modal component for picking a location using native maps.
+ * Allows user to tap map or drag marker to select coordinate.
  */
 const LocationPickerModal = ({
-    visible,
-    onClose,
-    onLocationSelected,
-    initialLat = 37.78825,
-    initialLng = -122.4324
+  visible,
+  onClose,
+  onLocationSelected,
+  initialLat = 37.78825,
+  initialLng = -122.4324
 }) => {
-    const generateMapHTML = () => {
-        return `
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          <style>html, body, #map { height: 100%; margin: 0; padding: 0; }</style>
-        </head>
-        <body>
-          <div id="map"></div>
-          <script>
-            let map; let marker;
-            function initMap() {
-              map = new google.maps.Map(document.getElementById('map'), {
-                center: { lat: ${initialLat}, lng: ${initialLng} },
-                zoom: 12,
-              });
-              map.addListener('click', function(e) {
-                const lat = e.latLng.lat();
-                const lng = e.latLng.lng();
-                if (marker) marker.setMap(null);
-                marker = new google.maps.Marker({ position: { lat, lng }, map });
-                window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'pickLocation', lat, lng }));
-              });
-            }
-          </script>
-          <script src="https://maps.googleapis.com/maps/api/js?key=YOUR_GOOGLE_MAPS_API_KEY&callback=initMap" async defer></script>
-        </body>
-      </html>
-    `;
-    };
+  const [selectedLoc, setSelectedLoc] = useState({
+    latitude: initialLat,
+    longitude: initialLng,
+  });
 
-    const handleMessage = (event) => {
-        try {
-            const data = JSON.parse(event.nativeEvent.data);
-            if (data.type === 'pickLocation') {
-                onLocationSelected(data.lat, data.lng);
-                onClose();
-            }
-        } catch (error) {
-            console.error('Error parsing picker message:', error);
-        }
-    };
+  const [region, setRegion] = useState({
+    latitude: initialLat,
+    longitude: initialLng,
+    latitudeDelta: 0.0922,
+    longitudeDelta: 0.0421,
+  });
 
-    return (
-        <Modal
-            visible={visible}
-            animationType="slide"
-            onRequestClose={onClose}
+  useEffect(() => {
+    if (visible) {
+      setSelectedLoc({ latitude: initialLat, longitude: initialLng });
+      setRegion(prev => ({ ...prev, latitude: initialLat, longitude: initialLng }));
+    }
+  }, [visible, initialLat, initialLng]);
+
+  const handleMapPress = (e) => {
+    setSelectedLoc(e.nativeEvent.coordinate);
+  };
+
+  const confirmLocation = () => {
+    onLocationSelected(selectedLoc.latitude, selectedLoc.longitude);
+    onClose();
+  };
+
+  return (
+    <Modal
+      visible={visible}
+      animationType="slide"
+      onRequestClose={onClose}
+    >
+      <View style={styles.container}>
+        <MapView
+          style={styles.map}
+          region={region}
+          onRegionChangeComplete={setRegion}
+          onPress={handleMapPress}
+          showsUserLocation={true}
+          moveOnMarkerPress={false} // Prevent glitchy movement
         >
-            <View style={styles.container}>
-                <WebView
-                    originWhitelist={["*"]}
-                    source={{ html: generateMapHTML() }}
-                    onMessage={handleMessage}
-                    javaScriptEnabled={true}
-                    domStorageEnabled={true}
-                />
-                <AppButton
-                    mode="contained"
-                    text="Close Map"
-                    onPress={onClose}
-                    style={styles.closeButton}
-                />
-            </View>
-        </Modal>
-    );
+          <Marker
+            coordinate={selectedLoc}
+            draggable
+            onDragEnd={handleMapPress}
+            title="Selected Location"
+            description="Long press and drag to adjust"
+          />
+        </MapView>
+
+        <View style={styles.buttonContainer}>
+          <AppButton
+            mode="contained"
+            text="Confirm Location"
+            onPress={confirmLocation}
+            style={styles.confirmButton}
+          />
+          <AppButton
+            mode="outlined"
+            text="Cancel"
+            onPress={onClose}
+            style={styles.cancelButton}
+          />
+        </View>
+      </View>
+    </Modal>
+  );
 };
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-    },
-    closeButton: {
-        margin: 20,
-    },
+  container: {
+    flex: 1,
+  },
+  map: {
+    flex: 1,
+  },
+  buttonContainer: {
+    position: 'absolute',
+    bottom: 30,
+    left: 20,
+    right: 20,
+    backgroundColor: 'rgba(255,255,255,0.9)',
+    padding: 15,
+    borderRadius: 15,
+    elevation: 5,
+  },
+  confirmButton: {
+    marginBottom: 10,
+  },
+  cancelButton: {
+    backgroundColor: 'white',
+  },
 });
 
 export default LocationPickerModal;

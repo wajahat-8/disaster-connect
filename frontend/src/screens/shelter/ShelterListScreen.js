@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, FlatList, Alert } from 'react-native';
-import { Text, Searchbar, useTheme, Button, FAB } from 'react-native-paper';
+import { Text, Searchbar, useTheme, Button, FAB, IconButton } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
 import { useShelters } from '../../hooks/useShelters';
 import { useAuth } from '../../auth';
 import * as Location from 'expo-location';
 import { ShelterCard, ShelterMapView } from './components';
+import { formatDistance } from '../../utils/locationUtils';
 
 /**
  * Screen for listing and finding nearby shelters.
@@ -20,6 +21,7 @@ export default function ShelterListScreen() {
     const [location, setLocation] = useState(null);
     const [searchQuery, setSearchQuery] = useState('');
     const [viewMode, setViewMode] = useState('list'); // 'list', 'map', or 'both'
+    const [nearestShelter, setNearestShelter] = useState(null);
 
     // ============ Initialization ============
 
@@ -55,6 +57,35 @@ export default function ShelterListScreen() {
         });
     };
 
+    // Update nearest shelter when shelters change
+    useEffect(() => {
+        console.log('Shelters data:', shelters);
+        console.log('Shelters count:', shelters.length);
+        if (shelters.length > 0 && location) {
+            // Shelters are already sorted by distance from backend
+            // Just pick the first one
+            const nearest = shelters[0];
+            if (nearest.distance !== undefined) {
+                setNearestShelter(nearest);
+            }
+        }
+    }, [shelters, location]);
+
+    // Auto-search when query changes (debounced)
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            if (searchQuery.trim() || location) {
+                fetchShelters({
+                    search: searchQuery,
+                    lat: location?.latitude,
+                    lng: location?.longitude
+                });
+            }
+        }, 500); // 500ms debounce
+
+        return () => clearTimeout(timer);
+    }, [searchQuery]);
+
     // ============ Handlers ============
 
     const handleSearch = () => {
@@ -85,6 +116,27 @@ export default function ShelterListScreen() {
         setViewMode(viewMode === 'both' ? 'list' : 'both');
     };
 
+    const handleFindNearest = () => {
+        if (!location) {
+            Alert.alert('Location Required', 'Please enable location services to find the nearest shelter.');
+            return;
+        }
+
+        if (!nearestShelter) {
+            Alert.alert('No Shelters Found', 'No shelters available in your area.');
+            return;
+        }
+
+        Alert.alert(
+            'Nearest Shelter',
+            `${nearestShelter.name} is the closest shelter, ${formatDistance(nearestShelter.distance)} away.`,
+            [
+                { text: 'View Details', onPress: () => handleShelterPress(nearestShelter) },
+                { text: 'OK', style: 'cancel' }
+            ]
+        );
+    };
+
     // ============ Render ============
 
     return (
@@ -99,6 +151,19 @@ export default function ShelterListScreen() {
                     elevation={1}
                     onSubmitEditing={handleSearch}
                 />
+
+                {/* Find Nearest Shelter Button */}
+                {location && nearestShelter && (
+                    <Button
+                        mode="contained"
+                        icon="navigation"
+                        onPress={handleFindNearest}
+                        style={styles.findNearestButton}
+                        contentStyle={styles.findNearestContent}
+                    >
+                        Nearest: {formatDistance(nearestShelter.distance)}
+                    </Button>
+                )}
             </View>
 
             {/* Map View */}
@@ -127,6 +192,8 @@ export default function ShelterListScreen() {
                             <ShelterCard
                                 shelter={item}
                                 onPress={() => handleShelterPress(item)}
+                                userLocation={location}
+                                isNearest={nearestShelter?._id === item._id}
                             />
                         )}
                         keyExtractor={(item) => item._id}
@@ -190,6 +257,13 @@ const styles = StyleSheet.create({
     listContent: {
         padding: 10,
         paddingBottom: 80,
+    },
+    findNearestButton: {
+        marginTop: 10,
+        borderRadius: 10,
+    },
+    findNearestContent: {
+        height: 44,
     },
     fab: {
         position: 'absolute',

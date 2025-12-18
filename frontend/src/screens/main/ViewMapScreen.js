@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { View, StyleSheet, Alert } from 'react-native';
 import MapView from 'react-native-maps';
 import { useTheme } from 'react-native-paper';
+import { useFocusEffect } from '@react-navigation/native';
 import * as Location from 'expo-location';
 import api from '../../api/apiClient';
 import AppLoader from '../../components/common/AppLoader';
@@ -18,6 +19,7 @@ export default function ViewMapScreen({ navigation }) {
   const [loading, setLoading] = useState(true);
   const [selectedDisaster, setSelectedDisaster] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
+  const regionRef = useRef(null); // Store region to avoid effect dependencies
 
   useEffect(() => {
     initializeMap();
@@ -36,14 +38,18 @@ export default function ViewMapScreen({ navigation }) {
       const location = await Location.getCurrentPositionAsync({});
       const { latitude, longitude } = location.coords;
 
-      setRegion({ latitude, longitude, latitudeDelta: 0.0922, longitudeDelta: 0.0421 });
+      const newRegion = { latitude, longitude, latitudeDelta: 0.0922, longitudeDelta: 0.0421 };
+      setRegion(newRegion);
+      regionRef.current = newRegion;
       fetchDisasters(latitude, longitude);
     } catch (error) {
       console.error('Location error:', error);
       // Default to San Francisco
       const defaultLat = 37.78825;
       const defaultLng = -122.4324;
-      setRegion({ latitude: defaultLat, longitude: defaultLng, latitudeDelta: 0.0922, longitudeDelta: 0.0421 });
+      const newRegion = { latitude: defaultLat, longitude: defaultLng, latitudeDelta: 0.0922, longitudeDelta: 0.0421 };
+      setRegion(newRegion);
+      regionRef.current = newRegion;
       fetchDisasters(defaultLat, defaultLng);
     }
   };
@@ -60,6 +66,16 @@ export default function ViewMapScreen({ navigation }) {
       setLoading(false);
     }
   };
+
+  // Refetch disasters when screen comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      if (regionRef.current) {
+        const { latitude, longitude } = regionRef.current;
+        fetchDisasters(latitude, longitude);
+      }
+    }, [])
+  );
 
   // ============ Handlers ============
 
@@ -90,7 +106,10 @@ export default function ViewMapScreen({ navigation }) {
         showsUserLocation={true}
         showsCompass={true}
         showsScale={true}
-        onRegionChangeComplete={setRegion}
+        onRegionChangeComplete={(newRegion) => {
+          setRegion(newRegion);
+          regionRef.current = newRegion;
+        }}
         mapPadding={{ top: 0, right: 0, bottom: 0, left: 0 }}
         cacheEnabled={false}
         moveOnMarkerPress={false}

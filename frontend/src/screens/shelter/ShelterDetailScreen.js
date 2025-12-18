@@ -67,7 +67,9 @@ export default function ShelterDetailScreen({ route, navigation }) {
             <View style={styles.contentContainer}>
                 {/* Header with name and verified status */}
                 <View style={styles.header}>
-                    <Text variant="headlineMedium" style={styles.title}>{shelter.name}</Text>
+                    <Text variant="headlineMedium" style={styles.title} numberOfLines={3}>
+                        {shelter.name}
+                    </Text>
                     <View style={styles.verifiedContainer}>
                         {shelter.verified ? (
                             <Chip icon="check-decagram" style={styles.verifiedChip} textStyle={{ color: 'green' }}>
@@ -145,10 +147,12 @@ const styles = StyleSheet.create({
     },
     header: {
         marginBottom: 20,
+        marginTop: 10,
     },
     title: {
         fontWeight: 'bold',
-        marginBottom: 8,
+        marginBottom: 12,
+        lineHeight: 32,
     },
     verifiedContainer: {
         flexDirection: 'row',

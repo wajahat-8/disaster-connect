@@ -2,6 +2,7 @@ import React from 'react';
 import { View, StyleSheet } from 'react-native';
 import { Text, Surface, IconButton } from 'react-native-paper';
 import MapView, { Marker, Callout } from 'react-native-maps';
+import ShelterMarker from './ShelterMarker';
 
 /**
  * Map view component for displaying shelter locations.
@@ -27,21 +28,11 @@ const ShelterMapView = ({ region, shelters, viewMode, onViewModeToggle, onShelte
                 showsScale={true}
             >
                 {shelters.map((shelter) => (
-                    <Marker
+                    <ShelterMarker
                         key={shelter._id}
-                        coordinate={{
-                            latitude: shelter.location.coordinates[1],
-                            longitude: shelter.location.coordinates[0],
-                        }}
-                    >
-                        <Callout onPress={() => onShelterPress(shelter)}>
-                            <View style={styles.callout}>
-                                <Text style={styles.calloutTitle}>{shelter.name}</Text>
-                                <Text>{shelter.availableBeds} beds available</Text>
-                                <Text style={styles.calloutAction}>Tap for details</Text>
-                            </View>
-                        </Callout>
-                    </Marker>
+                        shelter={shelter}
+                        onPress={onShelterPress}
+                    />
                 ))}
             </MapView>
 

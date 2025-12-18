@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { View, StyleSheet, Alert } from 'react-native';
-import { Text, Button, Surface } from 'react-native-paper';
+import { Text, Button, Surface, useTheme } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
+import LocationPickerModal from '../../main/components/LocationPickerModal';
 
 /**
  * Location capture component for adding shelters.
@@ -13,11 +14,14 @@ import * as Location from 'expo-location';
  * @param {Function} props.onLocationChange - Callback when location changes
  */
 const LocationCapture = ({ location, locationCaptured, loading, onLocationChange }) => {
+    const theme = useTheme();
+    const [showMapPicker, setShowMapPicker] = useState(false);
+
     const getCurrentLocation = async () => {
         try {
             let { status } = await Location.requestForegroundPermissionsAsync();
             if (status !== 'granted') {
-                Alert.alert('Permission Denied', 'Location permission is required to tag the shelter.');
+                Alert.alert('Permission Denied', 'Location permission is required.');
                 return;
             }
 
@@ -29,6 +33,10 @@ const LocationCapture = ({ location, locationCaptured, loading, onLocationChange
         } catch (e) {
             Alert.alert('Error', 'Could not fetch location. Please try again.');
         }
+    };
+
+    const handleMapPick = (lat, lng) => {
+        onLocationChange({ lat, lng });
     };
 
     return (
@@ -52,15 +60,35 @@ const LocationCapture = ({ location, locationCaptured, loading, onLocationChange
                     )}
                 </View>
             </View>
-            <Button
-                mode={locationCaptured ? "outlined" : "contained"}
-                onPress={getCurrentLocation}
-                loading={loading}
-                icon="crosshairs-gps"
-                style={styles.captureButton}
-            >
-                {locationCaptured ? "Update Location" : "Capture Location"}
-            </Button>
+
+            <View style={styles.buttonRow}>
+                <Button
+                    mode="outlined"
+                    onPress={getCurrentLocation}
+                    loading={loading}
+                    icon="crosshairs-gps"
+                    style={[styles.button, { borderColor: theme.colors.primary }]}
+                    textColor={theme.colors.primary}
+                >
+                    Use GPS
+                </Button>
+                <Button
+                    mode="contained"
+                    onPress={() => setShowMapPicker(true)}
+                    icon="map-marker-radius"
+                    style={[styles.button, { backgroundColor: theme.colors.primary }]}
+                >
+                    Pick on Map
+                </Button>
+            </View>
+
+            <LocationPickerModal
+                visible={showMapPicker}
+                onClose={() => setShowMapPicker(false)}
+                onLocationSelected={handleMapPick}
+                initialLat={locationCaptured ? location.lat : 37.78825}
+                initialLng={locationCaptured ? location.lng : -122.4324}
+            />
         </Surface>
     );
 };
@@ -90,8 +118,13 @@ const styles = StyleSheet.create({
     noLocationText: {
         color: 'gray',
     },
-    captureButton: {
+    buttonRow: {
+        flexDirection: 'row',
+        gap: 10,
         marginTop: 10,
+    },
+    button: {
+        flex: 1,
     },
 });
 

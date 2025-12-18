@@ -72,7 +72,15 @@ const HomeScreen = ({ navigation }) => {
           <AppCard
             key={index}
             mode="elevated"
-            onPress={() => navigation.navigate(item.route)}
+            onPress={() => {
+              // Special handling for cross-stack navigation
+              if (item.route === 'ShelterList') {
+                // Navigate to Shelters tab which contains ShelterList
+                navigation.navigate('Shelters');
+              } else {
+                navigation.navigate(item.route);
+              }
+            }}
             style={styles.card}
             contentStyle={styles.cardContent}
           >
