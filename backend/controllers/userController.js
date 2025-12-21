@@ -35,16 +35,16 @@ exports.updateProfile = async (req, res) => {
     const allowedUpdates = [
       'name',
       'email',
-      'phone', 
-      'skills', 
-      'location', 
-      'availability', 
+      'phone',
+      'skills',
+      'location',
+      'availability',
       'profileImage',
       'role'
     ];
 
     const updates = {};
-    
+
     // Filter only allowed fields
     Object.keys(req.body).forEach(key => {
       if (allowedUpdates.includes(key)) {
@@ -145,7 +145,7 @@ exports.changeRole = async (req, res) => {
     }
 
     user.role = role;
-    
+
     // If becoming volunteer, ensure availability is set
     if (role === 'volunteer' && user.availability === undefined) {
       user.availability = false;
@@ -303,6 +303,80 @@ exports.deleteAccount = async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Failed to delete account'
+    });
+  }
+};
+
+// @desc    Delete user by ID (Admin only)
+// @route   DELETE /api/users/:id
+// @access  Private/Admin
+exports.deleteUserById = async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id);
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    // Prevent deleting admin users
+    if (user.role === 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Cannot delete admin users'
+      });
+    }
+
+    // Soft delete - deactivate instead of removing
+    user.isActive = false;
+    await user.save();
+
+    res.status(200).json({
+      success: true,
+      message: 'User deleted successfully'
+    });
+  } catch (error) {
+    console.error('Delete user by ID error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to delete user'
+    });
+  }
+};
+
+// @desc    Get admin statistics
+// @route   GET /api/users/stats
+// @access  Private/Admin
+exports.getAdminStats = async (req, res) => {
+  try {
+    const DisasterReport = require('../models/DisasterReport');
+
+    // Count users by role
+    const totalUsers = await User.countDocuments({ isActive: true });
+    const totalVolunteers = await User.countDocuments({ role: 'volunteer', isActive: true });
+    const totalAdmins = await User.countDocuments({ role: 'admin', isActive: true });
+
+    // Count active disasters
+    const activeDisasters = await DisasterReport.countDocuments({
+      status: { $nin: ['resolved', 'false-alarm'] }
+    });
+
+    res.status(200).json({
+      success: true,
+      stats: {
+        totalUsers,
+        totalVolunteers,
+        totalAdmins,
+        activeDisasters
+      }
+    });
+  } catch (error) {
+    console.error('Get admin stats error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch admin statistics'
     });
   }
 };

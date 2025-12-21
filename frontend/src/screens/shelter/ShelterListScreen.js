@@ -59,8 +59,6 @@ export default function ShelterListScreen() {
 
     // Update nearest shelter when shelters change
     useEffect(() => {
-        console.log('Shelters data:', shelters);
-        console.log('Shelters count:', shelters.length);
         if (shelters.length > 0 && location) {
             // Shelters are already sorted by distance from backend
             // Just pick the first one
@@ -70,21 +68,6 @@ export default function ShelterListScreen() {
             }
         }
     }, [shelters, location]);
-
-    // Auto-search when query changes (debounced)
-    useEffect(() => {
-        const timer = setTimeout(() => {
-            if (searchQuery.trim() || location) {
-                fetchShelters({
-                    search: searchQuery,
-                    lat: location?.latitude,
-                    lng: location?.longitude
-                });
-            }
-        }, 500); // 500ms debounce
-
-        return () => clearTimeout(timer);
-    }, [searchQuery]);
 
     // ============ Handlers ============
 

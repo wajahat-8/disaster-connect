@@ -2,16 +2,18 @@ import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
+import { useAuth } from '../auth';
 import HomeScreen from '../screens/main/HomeScreen';
 import ProfileScreen from '../screens/main/ProfileScreen';
 import EditProfileScreen from '../screens/main/EditProfileScreen';
 import ReportDisasterScreen from '../screens/main/ReportDisasterScreen';
 import ViewMapScreen from '../screens/main/ViewMapScreen';
-import AdminNotificationScreen from '../screens/main/AdminNotificationScreen';
 
 import ShelterListScreen from '../screens/shelter/ShelterListScreen';
 import ShelterDetailScreen from '../screens/shelter/ShelterDetailScreen';
 import AddShelterScreen from '../screens/shelter/AddShelterScreen';
+
+import AdminNavigator from './AdminNavigator';
 
 const Tab = createBottomTabNavigator();
 const ProfileStack = createNativeStackNavigator();
@@ -23,7 +25,6 @@ function ProfileStackNavigator() {
     <ProfileStack.Navigator>
       <ProfileStack.Screen name="ProfileMain" component={ProfileScreen} options={{ title: 'Profile' }} />
       <ProfileStack.Screen name="EditProfile" component={EditProfileScreen} options={{ title: 'Edit Profile' }} />
-      <ProfileStack.Screen name="AdminNotification" component={AdminNotificationScreen} options={{ title: 'Send Notification' }} />
     </ProfileStack.Navigator>
   );
 }
@@ -34,6 +35,7 @@ function HomeStackNavigator() {
       <HomeStack.Screen name="HomeMain" component={HomeScreen} options={{ title: 'Home' }} />
       <HomeStack.Screen name="ReportDisaster" component={ReportDisasterScreen} options={{ title: 'Report Disaster' }} />
       <HomeStack.Screen name="ViewMap" component={ViewMapScreen} options={{ title: 'Disaster Map' }} />
+      <HomeStack.Screen name="NotificationInbox" component={NotificationInboxScreen} options={{ title: 'Notifications' }} />
     </HomeStack.Navigator>
   );
 }
@@ -49,6 +51,8 @@ function ShelterStackNavigator() {
 }
 
 export default function MainNavigator() {
+  const { isAdmin } = useAuth();
+
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
@@ -61,6 +65,8 @@ export default function MainNavigator() {
             iconName = focused ? 'map' : 'map-outline';
           } else if (route.name === 'Shelters') {
             iconName = focused ? 'business' : 'business-outline';
+          } else if (route.name === 'Admin') {
+            iconName = focused ? 'shield' : 'shield-outline';
           } else if (route.name === 'Profile') {
             iconName = focused ? 'person' : 'person-outline';
           }
@@ -74,11 +80,14 @@ export default function MainNavigator() {
       <Tab.Screen name="Home" component={HomeStackNavigator} options={{ headerShown: false }} />
       <Tab.Screen name="Shelters" component={ShelterStackNavigator} options={{ headerShown: false }} />
       <Tab.Screen name="Map" component={ViewMapScreen} />
+      {isAdmin && (
+        <Tab.Screen
+          name="Admin"
+          component={AdminNavigator}
+          options={{ headerShown: false }}
+        />
+      )}
       <Tab.Screen name="Profile" component={ProfileStackNavigator} options={{ headerShown: false }} />
     </Tab.Navigator>
   );
 }
-
-
-
-

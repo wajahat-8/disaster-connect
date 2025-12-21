@@ -1,6 +1,7 @@
 import React, { createContext, useState, useEffect } from 'react';
 import { authService } from './auth.service';
 import { storageService } from './storage.service';
+import { initializeNotifications } from '../services/notificationService';
 
 export const AuthContext = createContext();
 
@@ -43,6 +44,13 @@ export const AuthProvider = ({ children }) => {
         if (res.success) {
             setToken(res.token);
             setUser(res.user);
+
+            // Initialize push notifications after successful login
+            try {
+                await initializeNotifications();
+            } catch (error) {
+                console.error('Error initializing notifications:', error);
+            }
         }
         return res;
     };
@@ -52,6 +60,13 @@ export const AuthProvider = ({ children }) => {
         if (res.success) {
             setToken(res.token);
             setUser(res.user);
+
+            // Initialize push notifications after successful registration
+            try {
+                await initializeNotifications();
+            } catch (error) {
+                console.error('Error initializing notifications:', error);
+            }
         }
         return res;
     };

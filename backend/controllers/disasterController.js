@@ -35,8 +35,8 @@ exports.createDisaster = async (req, res) => {
     }
 
     // Ensure coordinates is [longitude, latitude] array
-    const finalCoordinates = Array.isArray(parsedCoordinates) 
-      ? parsedCoordinates 
+    const finalCoordinates = Array.isArray(parsedCoordinates)
+      ? parsedCoordinates
       : [parsedCoordinates.longitude, parsedCoordinates.latitude];
 
     const disaster = await DisasterReport.create({
@@ -223,3 +223,31 @@ exports.getNearbyDisasters = async (req, res) => {
   }
 };
 
+// @desc    Delete disaster report (Admin only)
+// @route   DELETE /api/disasters/:id
+// @access  Private/Admin
+exports.deleteDisaster = async (req, res) => {
+  try {
+    const disaster = await DisasterReport.findById(req.params.id);
+
+    if (!disaster) {
+      return res.status(404).json({
+        success: false,
+        message: 'Disaster report not found'
+      });
+    }
+
+    await DisasterReport.findByIdAndDelete(req.params.id);
+
+    res.status(200).json({
+      success: true,
+      message: 'Disaster report deleted successfully'
+    });
+  } catch (error) {
+    console.error('Delete disaster error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to delete disaster report'
+    });
+  }
+};

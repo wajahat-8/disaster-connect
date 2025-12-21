@@ -9,7 +9,7 @@ export const adminService = {
      */
     async getAllUsers(filters = {}) {
         try {
-            const response = await apiClient.get('/v1/admin/users', {
+            const response = await apiClient.get('/users', {
                 params: {
                     page: filters.page || 1,
                     limit: filters.limit || 10,
@@ -21,10 +21,10 @@ export const adminService = {
             return {
                 success: true,
                 data: {
-                    users: response.data.data,
+                    users: response.data.users,
                     totalPages: response.data.totalPages,
                     currentPage: response.data.currentPage,
-                    totalUsers: response.data.results
+                    totalUsers: response.data.count
                 }
             };
         } catch (error) {
@@ -40,8 +40,8 @@ export const adminService = {
      */
     async updateUserById(userId, userData) {
         try {
-            const response = await apiClient.put(`/v1/admin/users/${userId}`, userData);
-            return { success: true, data: response.data.data };
+            const response = await apiClient.put(`/users/${userId}`, userData);
+            return { success: true, data: response.data.user };
         } catch (error) {
             return { success: false, error: errorHelper(error, 'Failed to update user') };
         }
@@ -54,7 +54,7 @@ export const adminService = {
      */
     async deleteUser(userId) {
         try {
-            await apiClient.delete(`/v1/admin/users/${userId}`);
+            await apiClient.delete(`/users/${userId}`);
             return { success: true };
         } catch (error) {
             return { success: false, error: errorHelper(error, 'Failed to delete user') };
@@ -67,8 +67,8 @@ export const adminService = {
      */
     async getUserStats() {
         try {
-            const response = await apiClient.get('/v1/admin/stats/users');
-            return { success: true, stats: response.data.data };
+            const response = await apiClient.get('/users/stats');
+            return { success: true, stats: response.data.stats };
         } catch (error) {
             return { success: false, error: errorHelper(error, 'Failed to fetch user statistics') };
         }

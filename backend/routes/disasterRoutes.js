@@ -5,7 +5,8 @@ const {
   getDisasters,
   getDisasterById,
   verifyDisaster,
-  getNearbyDisasters
+  getNearbyDisasters,
+  deleteDisaster
 } = require('../controllers/disasterController');
 const { protect, authorize } = require('../middleware/auth');
 const upload = require('../middleware/upload');
@@ -20,6 +21,6 @@ router.post('/', protect, upload.single('image'), createDisaster);
 
 // Admin only routes
 router.put('/:id/verify', protect, authorize('admin'), verifyDisaster);
+router.delete('/:id', protect, authorize('admin'), deleteDisaster);
 
 module.exports = router;
-

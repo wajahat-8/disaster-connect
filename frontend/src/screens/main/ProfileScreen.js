@@ -59,22 +59,12 @@ export default function ProfileScreen({ navigation }) {
           icon="account-edit"
         />
 
-        {user?.role === 'admin' && (
-          <AppButton
-            mode="contained"
-            text="Admin Dashboard"
-            onPress={() => navigation.navigate('AdminNotification')}
-            icon="shield-account"
-            style={{ backgroundColor: theme.colors.tertiary, marginTop: 10 }}
-          />
-        )}
-
         <AppButton
           mode="outlined"
           text="Logout"
           onPress={logout}
           icon="logout"
-          style={{ borderColor: theme.colors.error }}
+          style={{ borderColor: theme.colors.error, marginTop: 10 }}
           labelStyle={{ color: theme.colors.error }}
         />
       </View>

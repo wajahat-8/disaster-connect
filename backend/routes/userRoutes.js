@@ -7,7 +7,9 @@ const {
   updateAvailability,
   getAllUsers,
   getUserById,
-  deleteAccount
+  deleteAccount,
+  deleteUserById,
+  getAdminStats
 } = require('../controllers/userController');
 const { protect, authorize } = require('../middleware/auth');
 
@@ -27,7 +29,9 @@ router.put('/role', changeRole);
 router.put('/availability', authorize('volunteer'), updateAvailability);
 
 // Admin only routes
+router.get('/stats', authorize('admin'), getAdminStats);
 router.get('/', authorize('admin'), getAllUsers);
 router.get('/:id', authorize('admin'), getUserById);
+router.delete('/:id', authorize('admin'), deleteUserById);
 
 module.exports = router;
