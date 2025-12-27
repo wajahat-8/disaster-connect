@@ -17,7 +17,7 @@ export const useAuth = () => {
         ...context,
         // Expose service methods directly through the hook for convenience
         // This maintains the original API where useAuth() provided these functions
-        updateProfile: authService.updateProfile,
+        // updateProfile is now handled by Context to sync state
         getAllUsers: adminService.getAllUsers,
         updateUser: adminService.updateUserById, // Mapping to match original naming if needed
         deleteUser: adminService.deleteUser,

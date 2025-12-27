@@ -82,6 +82,14 @@ export const AuthProvider = ({ children }) => {
         await storageService.setUser(userData);
     };
 
+    const updateProfile = async (profileData) => {
+        const res = await authService.updateProfile(profileData);
+        if (res.success && res.user) {
+            setUser(res.user);
+        }
+        return res;
+    };
+
     return (
         <AuthContext.Provider value={{
             user,
@@ -90,7 +98,9 @@ export const AuthProvider = ({ children }) => {
             login,
             register,
             logout,
+            logout,
             updateUser,
+            updateProfile,
             isAdmin: user?.role === 'admin',
         }}>
             {children}

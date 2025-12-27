@@ -121,7 +121,7 @@ const ManageSheltersScreen = ({ navigation }) => {
                         text="Delete"
                         onPress={() => handleDelete(item._id)}
                         buttonColor="#e74c3c"
-                        icon="trash"
+                        icon="delete"
                         contentStyle={{ height: 36 }}
                         labelStyle={{ fontSize: 12 }}
                         style={{ flex: 1 }}

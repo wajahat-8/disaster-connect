@@ -85,7 +85,7 @@ const DisasterListItem = ({ disaster, onDelete }) => {
                         text="Delete"
                         onPress={handleDelete}
                         buttonColor={theme.colors.error}
-                        icon="trash"
+                        icon="delete"
                         contentStyle={{ height: 36 }}
                         labelStyle={{ fontSize: 12 }}
                     />
