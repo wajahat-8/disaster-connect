@@ -1,10 +1,11 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
-import { Card, Chip } from 'react-native-paper';
+import { useTheme, Card, Chip } from 'react-native-paper';
 import { Ionicons } from '@expo/vector-icons';
 import AppButton from '../../../components/common/AppButton';
 
 const DisasterListItem = ({ disaster, onDelete }) => {
+    const theme = useTheme();
     const handleDelete = () => {
         Alert.alert(
             'Delete Disaster Report',
@@ -20,12 +21,8 @@ const DisasterListItem = ({ disaster, onDelete }) => {
         );
     };
 
-    const severityColor = {
-        low: '#27ae60',
-        medium: '#f39c12',
-        high: '#e67e22',
-        critical: '#e74c3c',
-    };
+    // Severity colors now from theme
+    const getSeverityColor = (severity) => theme.colors.severity[severity] || theme.colors.severity.low;
 
     const typeIcons = {
         flood: 'water',
@@ -44,15 +41,22 @@ const DisasterListItem = ({ disaster, onDelete }) => {
                         <Ionicons
                             name={typeIcons[disaster.type] || 'alert-circle'}
                             size={24}
-                            color={severityColor[disaster.severity]}
+                            color={getSeverityColor(disaster.severity)}
                         />
-                        <Text style={styles.type}>{disaster.type.toUpperCase()}</Text>
+                        <Text style={[styles.type, { color: theme.colors.textPrimary }]}>{disaster.type.toUpperCase()}</Text>
                     </View>
                     <Chip
-                        style={[styles.severityChip, { backgroundColor: severityColor[disaster.severity] }]}
-                        textStyle={{ color: 'white', fontSize: 11 }}
+                        style={[styles.severityChip, { backgroundColor: getSeverityColor(disaster.severity) }]}
+                        textStyle={{
+                            color: 'white',
+                            fontSize: 11,
+                            lineHeight: 12,
+                            marginVertical: 0,
+                            marginHorizontal: 4
+                        }}
+                        compact
                     >
-                        {disaster.severity}
+                        {disaster.severity ? disaster.severity.toUpperCase() : 'UNKNOWN'}
                     </Chip>
                 </View>
 
@@ -61,13 +65,18 @@ const DisasterListItem = ({ disaster, onDelete }) => {
                 </Text>
 
                 <View style={styles.meta}>
-                    <Text style={styles.metaText}>
-                        <Ionicons name="location" size={12} /> {disaster.location?.address || 'No address'}
-                    </Text>
-                    <Text style={styles.metaText}>
-                        <Ionicons name="calendar" size={12} />{' '}
-                        {new Date(disaster.createdAt).toLocaleDateString()}
-                    </Text>
+                    <View style={styles.metaLocationContainer}>
+                        <Ionicons name="location" size={12} color="#7f8c8d" style={{ marginRight: 4, marginTop: 2 }} />
+                        <Text style={styles.metaTextLocation}>
+                            {disaster.location?.address || 'No address'}
+                        </Text>
+                    </View>
+                    <View style={styles.metaDateContainer}>
+                        <Ionicons name="calendar" size={12} color="#7f8c8d" style={{ marginRight: 4 }} />
+                        <Text style={styles.metaText}>
+                            {new Date(disaster.createdAt).toLocaleDateString()}
+                        </Text>
+                    </View>
                 </View>
 
                 <View style={styles.actions}>
@@ -75,7 +84,7 @@ const DisasterListItem = ({ disaster, onDelete }) => {
                         mode="contained"
                         text="Delete"
                         onPress={handleDelete}
-                        buttonColor="#e74c3c"
+                        buttonColor={theme.colors.error}
                         icon="trash"
                         contentStyle={{ height: 36 }}
                         labelStyle={{ fontSize: 12 }}
@@ -112,18 +121,38 @@ const styles = StyleSheet.create({
         marginLeft: 8,
     },
     severityChip: {
-        height: 24,
+        height: 28, // Increased height
+        justifyContent: 'center',
+        alignItems: 'center',
     },
     description: {
         fontSize: 14,
-        color: '#34495e',
+        color: '#34495e', // Can override with theme.colors.textPrimary if passed
         marginBottom: 10,
         lineHeight: 20,
     },
     meta: {
         flexDirection: 'row',
         justifyContent: 'space-between',
+        alignItems: 'flex-start',
         marginBottom: 10,
+    },
+    metaLocationContainer: {
+        flex: 1,
+        flexDirection: 'row',
+        alignItems: 'flex-start',
+        marginRight: 10,
+    },
+    metaDateContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        flexShrink: 0,
+    },
+    metaTextLocation: {
+        fontSize: 12,
+        color: '#7f8c8d',
+        flex: 1,
+        flexShrink: 1, // Explicitly allow shrinking
     },
     metaText: {
         fontSize: 12,

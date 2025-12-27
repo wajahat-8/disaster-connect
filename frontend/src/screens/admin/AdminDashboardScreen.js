@@ -42,7 +42,7 @@ const AdminDashboardScreen = ({ navigation }) => {
     if (!isAdmin) {
         return (
             <View style={styles.container}>
-                <Text style={styles.errorText}>Access Denied. Admin privileges required.</Text>
+                <Text style={[styles.errorText, { color: theme.colors.error }]}>Access Denied. Admin privileges required.</Text>
             </View>
         );
     }
@@ -132,6 +132,7 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
         textAlign: 'center',
         marginVertical: 20,
+        // color: '#2c3e50', overridden in component
     },
     statsRow: {
         flexDirection: 'row',
@@ -144,7 +145,8 @@ const styles = StyleSheet.create({
     },
     errorText: {
         textAlign: 'center',
-        color: '#e74c3c',
+        color: '#e74c3c', // Could use theme.colors.error but this is style sheet. 
+        // Best to use inline style for theme color: style={[styles.errorText, { color: theme.colors.error }]}
         fontSize: 18,
         marginTop: 50,
     },

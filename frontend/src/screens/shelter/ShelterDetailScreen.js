@@ -72,11 +72,29 @@ export default function ShelterDetailScreen({ route, navigation }) {
                     </Text>
                     <View style={styles.verifiedContainer}>
                         {shelter.verified ? (
-                            <Chip icon="check-decagram" style={styles.verifiedChip} textStyle={{ color: 'green' }}>
+                            <Chip
+                                icon="check-decagram"
+                                style={styles.verifiedChip}
+                                textStyle={{
+                                    color: 'green',
+                                    fontSize: 12,
+                                    lineHeight: 14,
+                                    marginVertical: 0
+                                }}
+                            >
                                 Verified Shelter
                             </Chip>
                         ) : (
-                            <Chip icon="alert-circle-outline" style={styles.unverifiedChip} textStyle={{ color: 'orange' }}>
+                            <Chip
+                                icon="alert-circle-outline"
+                                style={styles.unverifiedChip}
+                                textStyle={{
+                                    color: 'orange',
+                                    fontSize: 12,
+                                    lineHeight: 14,
+                                    marginVertical: 0
+                                }}
+                            >
                                 Unverified
                             </Chip>
                         )}
@@ -147,7 +165,7 @@ const styles = StyleSheet.create({
     },
     header: {
         marginBottom: 20,
-        marginTop: 10,
+        marginTop: 30, // Increased from 10
     },
     title: {
         fontWeight: 'bold',
@@ -159,11 +177,15 @@ const styles = StyleSheet.create({
     },
     verifiedChip: {
         backgroundColor: '#e8f5e9',
-        height: 28,
+        height: 36, // Further increased
+        justifyContent: 'center',
+        alignItems: 'center',
     },
     unverifiedChip: {
         backgroundColor: '#fff3e0',
-        height: 28,
+        height: 36, // Further increased
+        justifyContent: 'center',
+        alignItems: 'center',
     },
     statusGrid: {
         flexDirection: 'row',

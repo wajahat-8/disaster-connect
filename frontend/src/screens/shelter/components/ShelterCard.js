@@ -59,7 +59,7 @@ const ShelterCard = ({ shelter, onPress, userLocation, isNearest = false }) => {
 
             {/* Bed availability */}
             <View style={styles.infoRow}>
-                <View style={styles.infoBadge}>
+                <View style={[styles.infoBadge, { backgroundColor: theme.colors.lightBackground || '#f0f0f0' }]}>
                     <MaterialCommunityIcons name="bed" size={16} color="#666" />
                     <Text
                         variant="bodyMedium"
@@ -139,10 +139,11 @@ const styles = StyleSheet.create({
     infoRow: {
         flexDirection: 'row',
         marginBottom: 10,
-        gap: 8,
+        // gap: 8, replaced
         flexWrap: 'wrap',
     },
     infoBadge: {
+        marginRight: 8, // gap replacement
         flexDirection: 'row',
         alignItems: 'center',
         backgroundColor: '#f0f0f0',
@@ -160,6 +161,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: 8,
         paddingVertical: 4,
         borderRadius: 6,
+        marginRight: 8, // gap replacement for distance badge if needed
     },
     distanceText: {
         marginLeft: 4,
@@ -167,7 +169,8 @@ const styles = StyleSheet.create({
     },
     nearestCard: {
         borderWidth: 2,
-        borderColor: '#10b981',
+        borderColor: '#10b981', // Could use theme.colors.nearestShelter but this is outside component. 
+        // Ideally we pass theme or use inline styles for dynamic colors.
         backgroundColor: '#ecfdf5',
     },
     nearestBadgeContainer: {
@@ -181,7 +184,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: 8,
         paddingVertical: 4,
         borderRadius: 4,
-        gap: 4,
+        // gap: 4, replaced
     },
     nearestText: {
         color: 'white',
@@ -191,11 +194,13 @@ const styles = StyleSheet.create({
     facilitiesRow: {
         flexDirection: 'row',
         flexWrap: 'wrap',
-        gap: 6,
+        // gap: 6, replaced
     },
     miniChip: {
         backgroundColor: '#e6f0ff',
         height: 26,
+        marginRight: 6, // gap replacement
+        marginBottom: 6, // for wrapping
     },
     chipText: {
         fontSize: 10,

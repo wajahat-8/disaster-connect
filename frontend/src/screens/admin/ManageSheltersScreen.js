@@ -95,12 +95,12 @@ const ManageSheltersScreen = ({ navigation }) => {
 
                 <View style={styles.facilities}>
                     {item.facilities?.slice(0, 3).map((facility, index) => (
-                        <Chip key={index} style={styles.facilityChip} compact>
+                        <Chip key={index} style={styles.facilityChip} textStyle={{ fontSize: 11, lineHeight: 12, marginVertical: 0 }} compact>
                             {facility}
                         </Chip>
                     ))}
                     {item.facilities?.length > 3 && (
-                        <Chip style={styles.facilityChip} compact>
+                        <Chip style={styles.facilityChip} textStyle={{ fontSize: 11, lineHeight: 12, marginVertical: 0 }} compact>
                             +{item.facilities.length - 3} more
                         </Chip>
                     )}
@@ -124,6 +124,7 @@ const ManageSheltersScreen = ({ navigation }) => {
                         icon="trash"
                         contentStyle={{ height: 36 }}
                         labelStyle={{ fontSize: 12 }}
+                        style={{ flex: 1 }}
                     />
                 </View>
             </View>
@@ -217,7 +218,9 @@ const styles = StyleSheet.create({
     facilityChip: {
         marginRight: 5,
         marginBottom: 5,
-        height: 24,
+        height: 28,
+        justifyContent: 'center', // Center vertically
+        alignItems: 'center',    // Center horizontally
     },
     actions: {
         flexDirection: 'row',

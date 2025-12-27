@@ -1,6 +1,7 @@
 import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useAuth } from '../auth';
+import { useTheme } from 'react-native-paper';
 
 // Admin Screens
 import AdminDashboardScreen from '../screens/admin/AdminDashboardScreen';
@@ -16,11 +17,13 @@ import AddShelterScreen from '../screens/shelter/AddShelterScreen';
 const Stack = createNativeStackNavigator();
 
 export default function AdminNavigator() {
+    const theme = useTheme();
+
     return (
         <Stack.Navigator
             screenOptions={{
                 headerStyle: {
-                    backgroundColor: '#2c3e50',
+                    backgroundColor: theme.colors.primary,
                 },
                 headerTintColor: '#fff',
                 headerTitleStyle: {

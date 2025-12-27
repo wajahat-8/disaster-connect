@@ -8,6 +8,7 @@ import ProfileScreen from '../screens/main/ProfileScreen';
 import EditProfileScreen from '../screens/main/EditProfileScreen';
 import ReportDisasterScreen from '../screens/main/ReportDisasterScreen';
 import ViewMapScreen from '../screens/main/ViewMapScreen';
+import NotificationInboxScreen from '../screens/main/NotificationInboxScreen';
 
 import ShelterListScreen from '../screens/shelter/ShelterListScreen';
 import ShelterDetailScreen from '../screens/shelter/ShelterDetailScreen';

@@ -1,8 +1,10 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
+import { useTheme } from 'react-native-paper';
 import AppButton from '../../../components/common/AppButton';
 
 const Pagination = ({ currentPage, totalPages, onPageChange }) => {
+    const theme = useTheme();
     if (totalPages <= 1) return null;
 
     const handlePrevious = () => {
@@ -26,7 +28,7 @@ const Pagination = ({ currentPage, totalPages, onPageChange }) => {
                 disabled={currentPage === 1}
             />
 
-            <Text style={styles.paginationInfo}>
+            <Text style={[styles.paginationInfo, { color: theme.colors.textSecondary }]}>
                 Page {currentPage} of {totalPages}
             </Text>
 
@@ -49,7 +51,7 @@ const styles = StyleSheet.create({
         paddingVertical: 10,
     },
     paginationInfo: {
-        color: '#7f8c8d',
+        // color: '#7f8c8d', overridden
         fontWeight: 'bold',
     },
 });

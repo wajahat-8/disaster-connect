@@ -69,10 +69,11 @@ const styles = StyleSheet.create({
     facilitiesContainer: {
         flexDirection: 'row',
         flexWrap: 'wrap',
-        gap: 8,
     },
     facilityChip: {
         backgroundColor: '#f5f5f5',
+        marginRight: 8,
+        marginBottom: 8,
     },
     emptyText: {
         color: 'gray',

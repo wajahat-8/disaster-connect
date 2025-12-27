@@ -246,4 +246,30 @@ exports.getUnreadCount = asyncHandler(async (req, res) => {
   });
 });
 
-// Keep existing createAlert and getAlerts functions below...
+// Create system alert (admin only)
+exports.createAlert = asyncHandler(async (req, res) => {
+  req.body.createdBy = req.user.id;
+
+  const alert = await Alert.create(req.body);
+
+  // If you want to automatically send push notifications for this alert:
+  // This logic mimics sendNotification but uses the alert data
+  // For now, we just create the record to fix the API crash.
+
+  res.status(201).json({
+    success: true,
+    message: 'Alert created successfully',
+    data: alert
+  });
+});
+
+// Get all alerts
+exports.getAlerts = asyncHandler(async (req, res) => {
+  const alerts = await Alert.find().sort({ createdAt: -1 });
+
+  res.status(200).json({
+    success: true,
+    count: alerts.length,
+    data: alerts
+  });
+});

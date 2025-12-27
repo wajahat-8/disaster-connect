@@ -1,26 +1,29 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 
+import { useTheme } from 'react-native-paper';
+
 const UserStatsCard = ({ stats }) => {
+    const theme = useTheme();
     if (!stats) return null;
 
     return (
         <View style={styles.statsContainer}>
             <View style={styles.statItem}>
-                <Text style={styles.statNumber}>{stats.totalUsers}</Text>
-                <Text style={styles.statLabel}>Total Users</Text>
+                <Text style={[styles.statNumber, { color: theme.colors.textPrimary }]}>{stats.totalUsers}</Text>
+                <Text style={[styles.statLabel, { color: theme.colors.textSecondary }]}>Total Users</Text>
             </View>
             <View style={styles.statItem}>
-                <Text style={styles.statNumber}>{stats.totalAdmins}</Text>
-                <Text style={styles.statLabel}>Admins</Text>
+                <Text style={[styles.statNumber, { color: theme.colors.textPrimary }]}>{stats.totalAdmins}</Text>
+                <Text style={[styles.statLabel, { color: theme.colors.textSecondary }]}>Admins</Text>
             </View>
             <View style={styles.statItem}>
-                <Text style={styles.statNumber}>{stats.totalVolunteers}</Text>
-                <Text style={styles.statLabel}>Volunteers</Text>
+                <Text style={[styles.statNumber, { color: theme.colors.textPrimary }]}>{stats.totalVolunteers}</Text>
+                <Text style={[styles.statLabel, { color: theme.colors.textSecondary }]}>Volunteers</Text>
             </View>
             <View style={styles.statItem}>
-                <Text style={styles.statNumber}>{stats.recentRegistrations}</Text>
-                <Text style={styles.statLabel}>New (7 days)</Text>
+                <Text style={[styles.statNumber, { color: theme.colors.textPrimary }]}>{stats.recentRegistrations}</Text>
+                <Text style={[styles.statLabel, { color: theme.colors.textSecondary }]}>New (7 days)</Text>
             </View>
         </View>
     );
@@ -41,11 +44,11 @@ const styles = StyleSheet.create({
     statNumber: {
         fontSize: 20,
         fontWeight: 'bold',
-        color: '#2c3e50',
+        // color: '#2c3e50', overridden
     },
     statLabel: {
         fontSize: 12,
-        color: '#7f8c8d',
+        // color: '#7f8c8d', overridden
         marginTop: 5,
     },
 });

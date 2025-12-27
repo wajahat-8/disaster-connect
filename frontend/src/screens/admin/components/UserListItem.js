@@ -14,9 +14,9 @@ const UserListItem = ({ user, onEdit, onDelete }) => {
                 <Text style={styles.userEmail}>{user.email}</Text>
                 <View style={styles.userMeta}>
                     <Chip
-                        style={[styles.roleBadge, styles[`role${user.role}`]]}
+                        style={[styles.roleBadge, { backgroundColor: theme.colors.role[user.role] }]}
                         textStyle={{
-                            color: user.role === 'volunteer' || user.role === 'admin' ? 'white' : 'black',
+                            color: 'white',
                             fontSize: 10,
                             lineHeight: 10,
                             marginVertical: 0,
@@ -26,7 +26,7 @@ const UserListItem = ({ user, onEdit, onDelete }) => {
                     >
                         {user.role.toUpperCase()}
                     </Chip>
-                    <Text style={styles.date}>
+                    <Text style={[styles.date, { color: theme.colors.textTertiary }]}>
                         Joined: {new Date(user.createdAt).toLocaleDateString()}
                     </Text>
                 </View>
@@ -40,7 +40,7 @@ const UserListItem = ({ user, onEdit, onDelete }) => {
                     mode="contained"
                     text="Edit"
                     onPress={() => onEdit(user)}
-                    style={{ marginRight: 5 }}
+                    style={{ flex: 1, marginRight: 5 }}
                     contentStyle={{ height: 36 }}
                     labelStyle={{ fontSize: 12 }}
                 />
@@ -51,6 +51,7 @@ const UserListItem = ({ user, onEdit, onDelete }) => {
                         text="Delete"
                         buttonColor={theme.colors.error}
                         onPress={() => onDelete(user)}
+                        style={{ flex: 1, marginLeft: 5 }}
                         contentStyle={{ height: 36 }}
                         labelStyle={{ fontSize: 12 }}
                     />
@@ -71,6 +72,7 @@ const styles = StyleSheet.create({
     userName: {
         fontSize: 16,
         fontWeight: 'bold',
+        // color: '#2c3e50', handled by theme usually, but keeping explicit for safely
         color: '#2c3e50',
     },
     userEmail: {
@@ -85,16 +87,10 @@ const styles = StyleSheet.create({
     },
     roleBadge: {
         marginRight: 10,
+        justifyContent: 'center',
+        alignItems: 'center',
     },
-    roleuser: {
-        backgroundColor: '#d5dbdb',
-    },
-    rolevolunteer: {
-        backgroundColor: '#f39c12',
-    },
-    roleadmin: {
-        backgroundColor: '#e74c3c',
-    },
+    // Removed specific role styles as they are now dynamic
     date: {
         fontSize: 12,
         color: '#95a5a6',
@@ -108,7 +104,7 @@ const styles = StyleSheet.create({
     },
     userActions: {
         flexDirection: 'row',
-        justifyContent: 'flex-end',
+        justifyContent: 'space-between', // Changed from flex-end to spread buttons
         marginTop: 10,
         paddingHorizontal: 10,
         paddingBottom: 10,

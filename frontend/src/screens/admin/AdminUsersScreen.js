@@ -1,5 +1,4 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, FlatList, StyleSheet, Alert } from 'react-native';
+import { SegmentedButtons, useTheme } from 'react-native-paper'; // Note: importing useTheme
 import { useAuth } from '../../auth';
 import AppLoader from '../../components/common/AppLoader';
 import {
@@ -12,6 +11,7 @@ import {
 
 const AdminUsersScreen = () => {
   const { getAllUsers, updateUser, deleteUser, getUserStats, isAdmin } = useAuth();
+  const theme = useTheme();
 
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -114,14 +114,14 @@ const AdminUsersScreen = () => {
   if (!isAdmin) {
     return (
       <View style={styles.container}>
-        <Text style={styles.errorText}>Access Denied. Admin privileges required.</Text>
+        <Text style={[styles.errorText, { color: theme.colors.error }]}>Access Denied. Admin privileges required.</Text>
       </View>
     );
   }
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>User Management</Text>
+    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+      <Text style={[styles.title, { color: theme.colors.primary }]}>User Management</Text>
 
       <UserStatsCard stats={stats} />
 
@@ -142,7 +142,7 @@ const AdminUsersScreen = () => {
           keyExtractor={(item) => item._id}
           showsVerticalScrollIndicator={false}
           ListEmptyComponent={
-            <Text style={styles.emptyText}>No users found</Text>
+            <Text style={[styles.emptyText, { color: theme.colors.textSecondary }]}>No users found</Text>
           }
         />
       )}
@@ -175,17 +175,17 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     textAlign: 'center',
     marginVertical: 20,
-    color: '#2c3e50',
+    // color: '#2c3e50', overridden
   },
   errorText: {
     textAlign: 'center',
-    color: '#e74c3c',
+    // color: '#e74c3c', overridden
     fontSize: 18,
     marginTop: 50,
   },
   emptyText: {
     textAlign: 'center',
-    color: '#7f8c8d',
+    // color: '#7f8c8d', overridden
     fontSize: 16,
     marginTop: 50,
   },

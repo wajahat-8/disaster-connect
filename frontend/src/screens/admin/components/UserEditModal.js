@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, Modal, ScrollView, StyleSheet } from 'react-native';
-import { Chip } from 'react-native-paper';
+import { Chip, useTheme } from 'react-native-paper';
 import AppButton from '../../../components/common/AppButton';
 import AppInput from '../../../components/common/AppInput';
 
@@ -13,6 +13,7 @@ const UserEditModal = ({
     onFormChange,
     onSave
 }) => {
+    const theme = useTheme();
     const handleFieldChange = (field, value) => {
         onFormChange({ ...editForm, [field]: value });
     };
@@ -25,8 +26,8 @@ const UserEditModal = ({
             onRequestClose={onClose}
         >
             <View style={styles.modalOverlay}>
-                <View style={styles.modalContent}>
-                    <Text style={styles.modalTitle}>Edit User</Text>
+                <View style={[styles.modalContent, { backgroundColor: theme.colors.background }]}>
+                    <Text style={[styles.modalTitle, { color: theme.colors.textPrimary }]}>Edit User</Text>
 
                     <ScrollView style={styles.modalForm}>
                         <AppInput
@@ -35,7 +36,7 @@ const UserEditModal = ({
                             onChangeText={(text) => handleFieldChange('name', text)}
                         />
 
-                        <Text style={styles.label}>Role</Text>
+                        <Text style={[styles.label, { color: theme.colors.textPrimary }]}>Role</Text>
                         <View style={styles.roleOptions}>
                             {ROLES.map((role) => (
                                 <Chip
@@ -98,7 +99,7 @@ const styles = StyleSheet.create({
         padding: 20,
     },
     modalContent: {
-        backgroundColor: '#fff',
+        // backgroundColor: '#fff', overridden
         borderRadius: 10,
         padding: 20,
         maxHeight: '90%',
@@ -108,7 +109,7 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
         marginBottom: 20,
         textAlign: 'center',
-        color: '#2c3e50',
+        // color: '#2c3e50', overridden
     },
     modalForm: {
         maxHeight: 400,
@@ -116,7 +117,7 @@ const styles = StyleSheet.create({
     label: {
         fontWeight: 'bold',
         marginBottom: 5,
-        color: '#2c3e50',
+        // color: '#2c3e50', overridden
     },
     roleOptions: {
         flexDirection: 'row',
