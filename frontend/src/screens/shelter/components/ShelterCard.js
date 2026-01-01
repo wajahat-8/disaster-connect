@@ -9,8 +9,8 @@ import { formatDistance, getDistanceColor } from '../../../utils/locationUtils';
 /**
  * Get capacity color based on availability ratio.
  */
-const getCapacityColor = (available, total, theme) => {
-    const ratio = available / total;
+const getCapacityColor = (available = 0, total = 1, theme) => {
+    const ratio = available / (total || 1);
     if (ratio < 0.2) return theme.colors.error;
     if (ratio < 0.5) return theme.colors.warning;
     return theme.colors.success;

@@ -11,8 +11,23 @@ import { FacilitiesList, ContactInfo } from './components';
  * Includes map, capacity, facilities, and contact info.
  */
 export default function ShelterDetailScreen({ route, navigation }) {
-    const { shelter } = route.params;
+    const { shelter } = route.params || {};
     const theme = useTheme();
+
+    // ============ Safety Check ============
+    if (!shelter || !shelter.location || !shelter.location.coordinates) {
+        return (
+            <View style={[styles.container, styles.center]}>
+                <MaterialCommunityIcons name="alert-circle-outline" size={48} color="gray" />
+                <Text variant="titleMedium" style={{ marginTop: 10 }}>Shelter details not found</Text>
+                <AppButton
+                    mode="text"
+                    text="Go Back"
+                    onPress={() => navigation.goBack()}
+                />
+            </View>
+        );
+    }
 
     // ============ Helpers ============
 
@@ -29,7 +44,9 @@ export default function ShelterDetailScreen({ route, navigation }) {
     };
 
     const occupancyColor = useMemo(() => {
-        const ratio = shelter.availableBeds / shelter.capacity;
+        const available = shelter.availableBeds || 0;
+        const capacity = shelter.capacity || 1;
+        const ratio = available / capacity;
         if (ratio < 0.2) return theme.colors.error;
         if (ratio < 0.5) return theme.colors.warning;
         return theme.colors.success;
@@ -108,7 +125,7 @@ export default function ShelterDetailScreen({ route, navigation }) {
                         <View style={styles.statusText}>
                             <Text variant="labelMedium" style={{ color: 'gray' }}>Availability</Text>
                             <Text variant="titleMedium" style={{ fontWeight: 'bold' }}>
-                                {shelter.availableBeds} / {shelter.capacity}
+                                {shelter.availableBeds || 0} / {shelter.capacity || 0}
                             </Text>
                         </View>
                     </Surface>
@@ -117,12 +134,12 @@ export default function ShelterDetailScreen({ route, navigation }) {
                 <Divider style={styles.divider} />
 
                 {/* Facilities Section */}
-                <FacilitiesList facilities={shelter.facilities} />
+                <FacilitiesList facilities={shelter.facilities || []} />
 
                 <Divider style={styles.divider} />
 
                 {/* Contact Section */}
-                <ContactInfo contactInfo={shelter.contactInfo} />
+                <ContactInfo contactInfo={shelter.contactInfo || {}} />
 
                 {/* Get Directions Button */}
                 <AppButton
@@ -142,6 +159,11 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: '#fff',
+    },
+    center: {
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: 20,
     },
     mapContainer: {
         height: 250,

@@ -7,10 +7,11 @@ import {
     TouchableOpacity,
     Text
 } from 'react-native';
-import { Card, Chip, SegmentedButtons, useTheme } from 'react-native-paper';
+import { Chip, SegmentedButtons, useTheme, IconButton } from 'react-native-paper';
 import { Ionicons } from '@expo/vector-icons';
 import apiClient from '../../api/apiClient';
 import AppLoader from '../../components/common/AppLoader';
+import AppCard from '../../components/common/AppCard';
 
 const NotificationInboxScreen = ({ navigation }) => {
     const theme = useTheme();
@@ -46,7 +47,6 @@ const NotificationInboxScreen = ({ navigation }) => {
     const handleMarkAsRead = async (notificationId) => {
         try {
             await apiClient.patch(`/notifications/${notificationId}/read`);
-            // Update local state
             setNotifications(prev =>
                 prev.map(notif =>
                     notif._id === notificationId
@@ -79,7 +79,6 @@ const NotificationInboxScreen = ({ navigation }) => {
 
     const getTimeAgo = (date) => {
         const seconds = Math.floor((new Date() - new Date(date)) / 1000);
-
         if (seconds < 60) return 'Just now';
         if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
         if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
@@ -87,55 +86,65 @@ const NotificationInboxScreen = ({ navigation }) => {
         return new Date(date).toLocaleDateString();
     };
 
-    const renderNotification = ({ item }) => (
-        <TouchableOpacity
-            onPress={() => !item.isRead && handleMarkAsRead(item._id)}
-            activeOpacity={0.7}
-        >
-            <Card
-                style={[
-                    styles.card,
-                    !item.isRead && styles.unreadCard
-                ]}
+    const getNotificationIcon = (type) => {
+        switch (type?.toLowerCase()) {
+            case 'emergency':
+            case 'disaster':
+                return { name: 'alert-circle', color: '#e74c3c' };
+            case 'shelter':
+                return { name: 'business', color: '#2980b9' };
+            case 'volunteer':
+                return { name: 'people', color: '#27ae60' };
+            case 'system':
+                return { name: 'settings', color: '#7f8c8d' };
+            default:
+                return { name: 'notifications', color: theme.colors.primary };
+        }
+    };
+
+    const renderNotification = ({ item }) => {
+        const icon = getNotificationIcon(item.type);
+        return (
+            <TouchableOpacity
+                onPress={() => !item.isRead && handleMarkAsRead(item._id)}
+                activeOpacity={0.7}
             >
-                <View style={styles.cardContent}>
+                <AppCard
+                    style={[
+                        styles.card,
+                        !item.isRead && { borderLeftColor: theme.colors.primary, borderLeftWidth: 4 }
+                    ]}
+                    contentStyle={styles.cardContent}
+                >
                     <View style={styles.header}>
-                        <View style={styles.titleRow}>
-                            {!item.isRead && (
-                                <View style={[styles.unreadDot, { backgroundColor: theme.colors.primary }]} />
-                            )}
-                            <Text
-                                style={[
-                                    styles.title,
-                                    !item.isRead && styles.unreadTitle
-                                ]}
-                            >
-                                {item.title}
+                        <View style={styles.iconContainer}>
+                            <Ionicons name={icon.name} size={24} color={icon.color} />
+                        </View>
+                        <View style={styles.titleColumn}>
+                            <View style={styles.titleRow}>
+                                <Text
+                                    style={[
+                                        styles.title,
+                                        !item.isRead && styles.unreadTitle
+                                    ]}
+                                    numberOfLines={1}
+                                >
+                                    {item.title}
+                                </Text>
+                                <Text style={styles.time}>{getTimeAgo(item.createdAt)}</Text>
+                            </View>
+                            <Text style={styles.body} numberOfLines={2}>
+                                {item.body}
                             </Text>
                         </View>
-                        <Text style={styles.time}>{getTimeAgo(item.createdAt)}</Text>
                     </View>
 
-                    <Text style={styles.body} numberOfLines={3}>
-                        {item.body}
-                    </Text>
+                </AppCard>
+            </TouchableOpacity>
+        );
+    };
 
-                    <View style={styles.footer}>
-                        <Chip
-                            mode="outlined"
-                            compact
-                            style={styles.typeChip}
-                            textStyle={{ fontSize: 11 }}
-                        >
-                            {item.type}
-                        </Chip>
-                    </View>
-                </View>
-            </Card>
-        </TouchableOpacity>
-    );
-
-    if (loading) {
+    if (loading && !refreshing) {
         return <AppLoader />;
     }
 
@@ -147,10 +156,16 @@ const NotificationInboxScreen = ({ navigation }) => {
                     onValueChange={setFilter}
                     buttons={[
                         { value: 'all', label: 'All' },
-                        { value: 'unread', label: `Unread (${unreadCount})` },
+                        { value: 'unread', label: unreadCount > 0 ? `Unread (${unreadCount})` : 'Unread' },
                         { value: 'read', label: 'Read' }
                     ]}
                     style={styles.segmentedButtons}
+                    theme={{
+                        colors: {
+                            secondaryContainer: theme.colors.primaryContainer,
+                            onSecondaryContainer: theme.colors.onPrimaryContainer,
+                        }
+                    }}
                 />
 
                 {unreadCount > 0 && (
@@ -158,8 +173,8 @@ const NotificationInboxScreen = ({ navigation }) => {
                         style={[styles.markAllButton, { backgroundColor: theme.colors.primary }]}
                         onPress={handleMarkAllAsRead}
                     >
-                        <Ionicons name="checkmark-done" size={16} color="white" />
-                        <Text style={styles.markAllText}>Mark all read</Text>
+                        <Ionicons name="checkmark-done-outline" size={18} color="white" />
+                        <Text style={styles.markAllText}>Mark all as read</Text>
                     </TouchableOpacity>
                 )}
             </View>
@@ -169,12 +184,20 @@ const NotificationInboxScreen = ({ navigation }) => {
                 renderItem={renderNotification}
                 keyExtractor={item => item._id}
                 refreshControl={
-                    <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+                    <RefreshControl
+                        refreshing={refreshing}
+                        onRefresh={onRefresh}
+                        colors={[theme.colors.primary]}
+                        tintColor={theme.colors.primary}
+                    />
                 }
                 ListEmptyComponent={
                     <View style={styles.emptyContainer}>
-                        <Ionicons name="notifications-off-outline" size={64} color="#ccc" />
-                        <Text style={styles.emptyText}>No notifications</Text>
+                        <View style={styles.emptyIconCircle}>
+                            <Ionicons name="notifications-off-outline" size={48} color="#bdc3c7" />
+                        </View>
+                        <Text style={styles.emptyText}>No notifications found</Text>
+                        <Text style={styles.emptySubtext}>We'll notify you when something important happens.</Text>
                     </View>
                 }
                 contentContainerStyle={styles.listContent}
@@ -188,91 +211,108 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     controls: {
-        padding: 15,
-        paddingBottom: 10,
+        padding: 16,
+        paddingBottom: 8,
     },
     segmentedButtons: {
-        marginBottom: 10,
+        marginBottom: 12,
     },
     markAllButton: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
-        padding: 10,
-        borderRadius: 8,
+        paddingVertical: 10,
+        borderRadius: 12,
+        elevation: 2,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.2,
+        shadowRadius: 1.41,
     },
     markAllText: {
         color: 'white',
-        marginLeft: 5,
-        fontWeight: '600',
+        marginLeft: 8,
+        fontWeight: '700',
+        fontSize: 14,
     },
     listContent: {
-        padding: 15,
-        paddingTop: 0,
+        padding: 16,
+        paddingTop: 8,
     },
     card: {
         marginBottom: 12,
-        elevation: 2,
-    },
-    unreadCard: {
-        borderLeftWidth: 4,
-        borderLeftColor: '#2196F3',
+        overflow: 'hidden',
     },
     cardContent: {
-        padding: 15,
+        padding: 12,
     },
     header: {
         flexDirection: 'row',
-        justifyContent: 'space-between',
         alignItems: 'flex-start',
-        marginBottom: 8,
+    },
+    iconContainer: {
+        width: 44,
+        height: 44,
+        borderRadius: 22,
+        backgroundColor: '#f8f9fa',
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginRight: 12,
+    },
+    titleColumn: {
+        flex: 1,
     },
     titleRow: {
         flexDirection: 'row',
+        justifyContent: 'space-between',
         alignItems: 'center',
-        flex: 1,
-    },
-    unreadDot: {
-        width: 8,
-        height: 8,
-        borderRadius: 4,
-        marginRight: 8,
+        marginBottom: 4,
     },
     title: {
-        fontSize: 16,
+        fontSize: 15,
         color: '#2c3e50',
+        fontWeight: '500',
         flex: 1,
     },
     unreadTitle: {
         fontWeight: 'bold',
+        color: '#000',
     },
     time: {
-        fontSize: 12,
+        fontSize: 11,
         color: '#95a5a6',
-        marginLeft: 10,
+        marginLeft: 8,
     },
     body: {
-        fontSize: 14,
-        color: '#7f8c8d',
-        lineHeight: 20,
-        marginBottom: 10,
-    },
-    footer: {
-        flexDirection: 'row',
-        justifyContent: 'flex-end',
-    },
-    typeChip: {
-        height: 24,
+        fontSize: 13,
+        color: '#576574',
+        lineHeight: 18,
     },
     emptyContainer: {
         alignItems: 'center',
         justifyContent: 'center',
-        paddingVertical: 60,
+        paddingVertical: 80,
+    },
+    emptyIconCircle: {
+        width: 100,
+        height: 100,
+        borderRadius: 50,
+        backgroundColor: '#f8f9fa',
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginBottom: 20,
     },
     emptyText: {
-        marginTop: 20,
-        fontSize: 16,
+        fontSize: 18,
+        fontWeight: 'bold',
+        color: '#2c3e50',
+        marginBottom: 8,
+    },
+    emptySubtext: {
+        fontSize: 14,
         color: '#95a5a6',
+        textAlign: 'center',
+        paddingHorizontal: 40,
     },
 });
 

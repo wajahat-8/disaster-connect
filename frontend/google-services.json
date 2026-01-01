@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "409121505782",
+    "project_id": "disaster-connect-c87b3",
+    "storage_bucket": "disaster-connect-c87b3.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:409121505782:android:57bc61653c6ba5deb547d7",
+        "android_client_info": {
+          "package_name": "com.disasterconnect.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDE_1o0p0aJ_IYdxs8gPgG1skYCi9VKrl4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

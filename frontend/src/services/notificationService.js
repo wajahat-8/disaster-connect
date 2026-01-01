@@ -66,6 +66,16 @@ export const getPushToken = async () => {
       return null;
     }
 
+    // Check if running in Expo Go
+    const isExpoGo = Constants.appOwnership === 'expo';
+    if (isExpoGo && Platform.OS === 'android') {
+      console.warn(
+        'expo-notifications: Remote notifications are not supported in Expo Go for SDK 53+. ' +
+        'Use a development build instead.'
+      );
+      return null;
+    }
+
     const { status } = await Notifications.getPermissionsAsync();
     if (status !== 'granted') {
       console.warn('Notification permission not granted');
@@ -74,9 +84,22 @@ export const getPushToken = async () => {
 
     const projectId = getExpoProjectId();
     const tokenConfig = projectId ? { projectId } : {};
-    const tokenData = await Notifications.getExpoPushTokenAsync(tokenConfig);
 
-    return tokenData.data;
+    try {
+      const tokenData = await Notifications.getExpoPushTokenAsync(tokenConfig);
+      return tokenData.data;
+    } catch (tokenError) {
+      if (tokenError.message.includes('EXPERIENCE_NOT_FOUND')) {
+        console.warn(
+          'Push token fetch failed: EAS Project ID not found or mismatched. ' +
+          'To fix this, run "npx eas project:init" to link this project to your Expo account, ' +
+          'then create a development build with "npx expo run:android".'
+        );
+      } else {
+        console.error('Error fetching Expo push token:', tokenError);
+      }
+      return null;
+    }
   } catch (error) {
     console.error('Error getting push token:', error);
     return null;

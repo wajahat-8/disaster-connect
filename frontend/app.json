@@ -30,6 +30,7 @@
       },
       "edgeToEdgeEnabled": false,
       "package": "com.disasterconnect.app",
+      "googleServicesFile": "./google-services.json",
       "permissions": [
         "ACCESS_FINE_LOCATION",
         "ACCESS_COARSE_LOCATION",
@@ -52,6 +53,14 @@
           "sounds": [],
           "mode": "production"
         }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "googleServicesFile": "./google-services.json"
+          }
+        }
       ]
     ],
     "notification": {
@@ -63,8 +72,9 @@
     },
     "extra": {
       "eas": {
-        "projectId": "22e6a64c-779f-4f44-b6ac-2c357521d3a6"
+        "projectId": "e5e5334d-b366-433c-8600-22749f3d9ba2"
       }
-    }
+    },
+    "owner": "wajahat-1"
   }
 }
