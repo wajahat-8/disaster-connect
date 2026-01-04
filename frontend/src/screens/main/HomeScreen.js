@@ -1,21 +1,33 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import { View, StyleSheet, ScrollView, TouchableOpacity, Dimensions, SafeAreaView } from 'react-native';
 import { Text, Avatar, useTheme, Chip, Badge } from 'react-native-paper';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../auth';
 import { useFocusEffect } from '@react-navigation/native';
 import AppCard from '../../components/common/AppCard';
+import { getAllItems } from '../../api/lostFoundApi';
 import apiClient from '../../api/apiClient';
 
 const HomeScreen = ({ navigation }) => {
   const { user } = useAuth();
   const theme = useTheme();
   const [unreadCount, setUnreadCount] = useState(0);
+  const [recentItems, setRecentItems] = useState([]);
+  const [dimensions, setDimensions] = useState(Dimensions.get('window'));
 
-  // Load unread count when screen is focused
+  // Listen for dimension changes (orientation, window resize)
+  useEffect(() => {
+    const subscription = Dimensions.addEventListener('change', ({ window }) => {
+      setDimensions(window);
+    });
+    return () => subscription?.remove();
+  }, []);
+
+  // Load data when screen is focused
   useFocusEffect(
     React.useCallback(() => {
       loadUnreadCount();
+      loadRecentItems();
     }, [])
   );
 
@@ -27,6 +39,18 @@ const HomeScreen = ({ navigation }) => {
       }
     } catch (error) {
       console.error('Error loading unread count:', error);
+    }
+  };
+
+  const loadRecentItems = async () => {
+    try {
+      // Fetch latest 5 items
+      const data = await getAllItems({ limit: 5 });
+      if (data.success) {
+        setRecentItems(data.data.slice(0, 5));
+      }
+    } catch (error) {
+      console.error('Error loading recent items:', error);
     }
   };
 
@@ -52,107 +76,145 @@ const HomeScreen = ({ navigation }) => {
       color: '#2196F3',
       route: 'ViewMap'
     },
-    // Volunteer screen not yet implemented
-    // {
-    //   title: 'Volunteer',
-    //   subtitle: 'Sign up to help others',
-    //   icon: 'hand-left',
-    //   color: '#FF9800',
-    //   route: 'VolunteerValues'
-    // }
+    {
+      title: 'Lost & Found',
+      subtitle: 'Report or find missing items',
+      icon: 'search',
+      color: '#FF9800',
+      route: 'Lost & Found'
+    },
+    {
+      title: 'Donate',
+      subtitle: 'Support relief efforts',
+      icon: 'heart',
+      color: '#9C27B0',
+      route: 'Donate'
+    }
   ];
 
+  // Calculate number of columns based on screen width
+  const getColumnCount = () => {
+    if (dimensions.width >= 768) return 3; // Tablet
+    if (dimensions.width >= 600) return 3; // Large phone landscape
+    return 2; // Phone portrait
+  };
+
+  const columnCount = getColumnCount();
+  const cardWidth = `${(100 / columnCount) - 4}%`; // Subtract 4% for margins
+
   return (
-    <ScrollView style={[styles.container, { backgroundColor: theme.colors.background }]}>
-      {/* Header Section */}
-      <View style={styles.header}>
-        <View>
-          <Text variant="titleLarge" style={styles.greeting}>Hello, {user?.name}</Text>
-          <Text variant="bodyMedium" style={{ color: 'gray' }}>Stay safe and connected.</Text>
-        </View>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 15 }}>
-          {/* Notification Bell */}
-          <TouchableOpacity
-            onPress={() => navigation.navigate('NotificationInbox')}
-            style={{ position: 'relative' }}
-          >
-            <Ionicons name="notifications-outline" size={28} color={theme.colors.primary} />
-            {unreadCount > 0 && (
-              <Badge
-                style={{
-                  position: 'absolute',
-                  top: -4,
-                  right: -6,
-                  backgroundColor: '#FF5252'
-                }}
-                size={18}
-              >
-                {unreadCount > 99 ? '99+' : unreadCount}
-              </Badge>
-            )}
-          </TouchableOpacity>
-
-          {/* Profile Avatar */}
-          <TouchableOpacity onPress={() => navigation.navigate('Profile')}>
-            <Avatar.Text
-              size={45}
-              label={user?.name?.substring(0, 2).toUpperCase() || 'U'}
-              style={{ backgroundColor: theme.colors.primaryContainer }}
-              color={theme.colors.primary}
-            />
-          </TouchableOpacity>
-        </View>
-      </View>
-
-      {/* Quick Stats or Status (Optional) */}
-      <View style={{ paddingHorizontal: 20, marginBottom: 20 }}>
-        <Chip icon="check-circle" style={{ backgroundColor: '#E8F5E9' }} textStyle={{ color: '#2E7D32' }}>
-          System Operational
-        </Chip>
-      </View>
-
-      {/* Menu Grid */}
-      <View style={styles.gridContainer}>
-        {menuItems.map((item, index) => (
-          <AppCard
-            key={index}
-            mode="elevated"
-            onPress={() => {
-              // Special handling for cross-stack navigation
-              if (item.route === 'ShelterList') {
-                // Navigate to Shelters tab which contains ShelterList
-                navigation.navigate('Shelters');
-              } else {
-                navigation.navigate(item.route);
-              }
-            }}
-            style={styles.card}
-            contentStyle={styles.cardContent}
-          >
-            <View style={[styles.iconContainer, { backgroundColor: item.color + '20' }]}>
-              <Ionicons name={item.icon} size={32} color={item.color} />
-            </View>
-            <Text variant="titleMedium" style={styles.cardTitle}>{item.title}</Text>
-            <Text variant="bodySmall" style={styles.cardSubtitle}>{item.subtitle}</Text>
-          </AppCard>
-        ))}
-      </View>
-
-      {/* Recent Alerts (Example) */}
-      <View style={{ paddingHorizontal: 20, marginBottom: 20 }}>
-        <Text variant="titleMedium" style={{ marginBottom: 10, fontWeight: 'bold' }}>Recent Updates</Text>
-        <AppCard>
-          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-            <Ionicons name="information-circle" size={24} color={theme.colors.primary} style={{ marginRight: 10 }} />
-            <View style={{ flex: 1 }}>
-              <Text variant="bodyMedium" style={{ fontWeight: 'bold' }}>Weather Warning</Text>
-              <Text variant="bodySmall">Heavy rains expected in the northern district.</Text>
-            </View>
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
+      <ScrollView style={{ flex: 1 }}>
+        {/* Header Section */}
+        <View style={styles.header}>
+          <View>
+            <Text variant="titleLarge" style={styles.greeting}>Hello, {user?.name}</Text>
+            <Text variant="bodyMedium" style={{ color: 'gray' }}>Stay safe and connected.</Text>
           </View>
-        </AppCard>
-      </View>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 15 }}>
+            {/* Notification Bell */}
+            <TouchableOpacity
+              onPress={() => navigation.navigate('NotificationInbox')}
+              style={{ position: 'relative' }}
+            >
+              <Ionicons name="notifications-outline" size={28} color={theme.colors.primary} />
+              {unreadCount > 0 && (
+                <Badge
+                  style={{
+                    position: 'absolute',
+                    top: -4,
+                    right: -6,
+                    backgroundColor: '#FF5252'
+                  }}
+                  size={18}
+                >
+                  {unreadCount > 99 ? '99+' : unreadCount}
+                </Badge>
+              )}
+            </TouchableOpacity>
 
-    </ScrollView>
+            {/* Profile Avatar */}
+            <TouchableOpacity onPress={() => navigation.navigate('Profile')}>
+              <Avatar.Text
+                size={45}
+                label={user?.name?.substring(0, 2).toUpperCase() || 'U'}
+                style={{ backgroundColor: theme.colors.primaryContainer }}
+                color={theme.colors.primary}
+              />
+            </TouchableOpacity>
+          </View>
+        </View>
+
+
+
+        {/* Menu Grid */}
+        <View style={styles.gridContainer}>
+          {console.log('Rendering menu items:', menuItems.length)}
+          {menuItems.map((item, index) => (
+            <AppCard
+              key={index}
+              mode="elevated"
+              onPress={() => {
+                if (item.route === 'ShelterList') {
+                  navigation.navigate('Shelters');
+                } else if (item.route === 'Lost & Found') {
+                  navigation.navigate('Lost & Found');
+                } else {
+                  navigation.navigate(item.route);
+                }
+              }}
+              style={styles.card}
+              contentStyle={styles.cardContent}
+            >
+              <View style={[styles.iconContainer, { backgroundColor: item.color + '20' }]}>
+                <Ionicons name={item.icon} size={32} color={item.color} />
+              </View>
+              <Text variant="titleMedium" style={styles.cardTitle}>{item.title}</Text>
+              <Text variant="bodySmall" style={styles.cardSubtitle}>{item.subtitle}</Text>
+            </AppCard>
+          ))}
+        </View>
+
+        {/* Recent Lost & Found */}
+        {recentItems.length > 0 && (
+          <View style={{ paddingHorizontal: 20, marginBottom: 20 }}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+              <Text variant="titleMedium" style={{ fontWeight: 'bold' }}>Recent Lost & Found</Text>
+              <TouchableOpacity onPress={() => navigation.navigate('Lost & Found')}>
+                <Text variant="bodySmall" style={{ color: theme.colors.primary }}>See All</Text>
+              </TouchableOpacity>
+            </View>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingRight: 20 }}>
+              {recentItems.map((item) => (
+                <AppCard
+                  key={item._id}
+                  onPress={() => navigation.navigate('Lost & Found')}
+                  style={styles.itemCard}
+                  contentStyle={{ padding: 10 }}
+                >
+                  <View style={{ flexDirection: 'row', marginBottom: 5 }}>
+                    <Chip
+                      icon={item.status === 'lost' ? 'help-circle' : 'check-circle'}
+                      style={{ backgroundColor: item.status === 'lost' ? '#ffebee' : '#e8f5e9', height: 26 }}
+                      textStyle={{ color: item.status === 'lost' ? theme.colors.error : 'green', fontSize: 10, marginVertical: 0, lineHeight: 12 }}
+                    >
+                      {item.status.toUpperCase()}
+                    </Chip>
+                  </View>
+                  <Text variant="labelLarge" numberOfLines={1}>{item.itemName}</Text>
+                  <Text variant="bodySmall" numberOfLines={1} style={{ color: 'gray' }}>
+                    {item.location?.address || 'No location'}
+                  </Text>
+                </AppCard>
+              ))}
+            </ScrollView>
+          </View>
+        )}
+
+
+
+      </ScrollView>
+    </SafeAreaView>
   );
 };
 
@@ -162,7 +224,7 @@ const styles = StyleSheet.create({
   },
   header: {
     padding: 20,
-    paddingTop: 50,
+    paddingTop: 10,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -178,7 +240,10 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   card: {
-    width: '48%',
+    flexBasis: '48%',
+    flexGrow: 0,
+    flexShrink: 0,
+    minWidth: 150,
     marginBottom: 15,
     borderRadius: 16,
   },
@@ -199,6 +264,11 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     color: 'gray',
     marginTop: 4,
+  },
+  itemCard: {
+    width: 160,
+    marginRight: 15,
+    borderRadius: 12
   }
 });
 

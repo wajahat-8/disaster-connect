@@ -44,6 +44,8 @@ app.use('/api/disasters', require('./routes/disasterRoutes'));
 app.use('/api/shelters', require('./routes/shelterRoutes'));
 app.use('/api/notifications', require('./routes/notificationRoutes'));
 app.use('/api/alerts', require('./routes/alertRoutes'));
+app.use('/api/lost-found', require('./routes/lostFoundRoutes'));
+app.use('/api/donations', require('./routes/donationRoutes'));
 
 // 404 handler
 app.use((req, res) => {

@@ -25,7 +25,12 @@ const LocationCapture = ({ location, locationCaptured, loading, onLocationChange
                 return;
             }
 
-            let loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
+            // Optimization: Try last known position first
+            let loc = await Location.getLastKnownPositionAsync({});
+
+            if (!loc) {
+                loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
+            }
             onLocationChange({
                 lat: loc.coords.latitude,
                 lng: loc.coords.longitude

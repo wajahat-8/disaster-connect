@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { View, Modal, StyleSheet, Dimensions } from 'react-native';
-import MapView, { Marker } from 'react-native-maps';
+import { View, Modal, StyleSheet, Dimensions, Platform, Text } from 'react-native';
+import MapView from 'react-native-maps';
 import AppButton from '../../../components/common/AppButton';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 /**
  * Modal component for picking a location using native maps.
@@ -14,11 +15,6 @@ const LocationPickerModal = ({
   initialLat = 37.78825,
   initialLng = -122.4324
 }) => {
-  const [selectedLoc, setSelectedLoc] = useState({
-    latitude: initialLat,
-    longitude: initialLng,
-  });
-
   const [region, setRegion] = useState({
     latitude: initialLat,
     longitude: initialLng,
@@ -28,17 +24,17 @@ const LocationPickerModal = ({
 
   useEffect(() => {
     if (visible) {
-      setSelectedLoc({ latitude: initialLat, longitude: initialLng });
       setRegion(prev => ({ ...prev, latitude: initialLat, longitude: initialLng }));
     }
   }, [visible, initialLat, initialLng]);
 
-  const handleMapPress = (e) => {
-    setSelectedLoc(e.nativeEvent.coordinate);
+  const onRegionChangeComplete = (newRegion) => {
+    setRegion(newRegion);
   };
 
   const confirmLocation = () => {
-    onLocationSelected(selectedLoc.latitude, selectedLoc.longitude);
+    // The selected location is the center of the map (region)
+    onLocationSelected(region.latitude, region.longitude);
     onClose();
   };
 
@@ -52,19 +48,23 @@ const LocationPickerModal = ({
         <MapView
           style={styles.map}
           region={region}
-          onRegionChangeComplete={setRegion}
-          onPress={handleMapPress}
+          onRegionChangeComplete={onRegionChangeComplete}
           showsUserLocation={true}
-          moveOnMarkerPress={false} // Prevent glitchy movement
-        >
-          <Marker
-            coordinate={selectedLoc}
-            draggable
-            onDragEnd={handleMapPress}
-            title="Selected Location"
-            description="Long press and drag to adjust"
-          />
-        </MapView>
+          showsMyLocationButton={true}
+          loadingEnabled={true}
+          loadingIndicatorColor="#00695C"
+          loadingBackgroundColor="#ffffff"
+        />
+
+        {/* Fixed Center Marker */}
+        <View style={styles.markerFixed}>
+          <MaterialCommunityIcons name="map-marker" size={48} color="#D93025" />
+        </View>
+
+        {/* Hint Text */}
+        <View style={styles.hintContainer}>
+          <Text style={styles.hintText}>Move map to align marker</Text>
+        </View>
 
         <View style={styles.buttonContainer}>
           <AppButton
@@ -91,6 +91,29 @@ const styles = StyleSheet.create({
   },
   map: {
     flex: 1,
+  },
+  markerFixed: {
+    position: 'absolute',
+    left: '50%',
+    top: '50%',
+    marginLeft: -24, // Half of size
+    marginTop: -48, // Full size (bottom of pin at center)
+    elevation: 4,
+    zIndex: 10,
+    pointerEvents: 'none', // Allow touches to pass through to map
+  },
+  hintContainer: {
+    position: 'absolute',
+    top: 50,
+    alignSelf: 'center',
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 20,
+  },
+  hintText: {
+    color: 'white',
+    fontWeight: 'bold',
   },
   buttonContainer: {
     position: 'absolute',

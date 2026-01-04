@@ -12,14 +12,33 @@ const getExpoProjectId = () => {
     undefined;
 };
 
+// Check if running in Expo Go with SDK 53+
+const isExpoGoSDK53Plus = () => {
+  const isExpoGo = Constants.appOwnership === 'expo';
+  const sdkVersion = parseInt(Constants.expoConfig?.sdkVersion || Constants.manifest?.sdkVersion || '0');
+  return isExpoGo && Platform.OS === 'android' && sdkVersion >= 53;
+};
+
 // Configure how notifications are handled when app is in foreground
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowAlert: true,
-    shouldPlaySound: true,
-    shouldSetBadge: true,
-  }),
-});
+// Skip if in Expo Go SDK 53+ to prevent errors from showing on screen
+const configureNotificationHandler = () => {
+  if (isExpoGoSDK53Plus()) {
+    console.log('expo-notifications: Skipping notification handler configuration (Expo Go SDK 53+)');
+    return;
+  }
+
+  try {
+    Notifications.setNotificationHandler({
+      handleNotification: async () => ({
+        shouldShowAlert: true,
+        shouldPlaySound: true,
+        shouldSetBadge: true,
+      }),
+    });
+  } catch (error) {
+    console.log('expo-notifications: Could not configure notification handler');
+  }
+};
 
 /**
  * Request notification permissions
@@ -62,17 +81,13 @@ export const requestNotificationPermission = async () => {
 export const getPushToken = async () => {
   try {
     if (!Device.isDevice) {
-      console.warn('Must use physical device for Push Notifications');
+      console.log('Push notifications require a physical device');
       return null;
     }
 
-    // Check if running in Expo Go
-    const isExpoGo = Constants.appOwnership === 'expo';
-    if (isExpoGo && Platform.OS === 'android') {
-      console.warn(
-        'expo-notifications: Remote notifications are not supported in Expo Go for SDK 53+. ' +
-        'Use a development build instead.'
-      );
+    // Check if running in Expo Go SDK 53+
+    if (isExpoGoSDK53Plus()) {
+      console.log('expo-notifications: Push notifications not available in Expo Go SDK 53+ (use development build)');
       return null;
     }
 
@@ -141,32 +156,41 @@ export const registerTokenWithBackend = async (token) => {
  */
 export const initializeNotifications = async () => {
   try {
+    // Configure notification handler first
+    configureNotificationHandler();
+
     // Create android notification channel
     if (Platform.OS === 'android') {
-      await Notifications.setNotificationChannelAsync('emergency_alerts', {
-        name: 'Emergency Alerts',
-        importance: Notifications.AndroidImportance.MAX,
-        vibrationPattern: [0, 250, 250, 250],
-        lightColor: '#FF231F7C',
-      });
+      try {
+        await Notifications.setNotificationChannelAsync('emergency_alerts', {
+          name: 'Emergency Alerts',
+          importance: Notifications.AndroidImportance.MAX,
+          vibrationPattern: [0, 250, 250, 250],
+          lightColor: '#FF231F7C',
+        });
 
-      await Notifications.setNotificationChannelAsync('task_alerts', {
-        name: 'Task Alerts',
-        importance: Notifications.AndroidImportance.HIGH,
-        vibrationPattern: [0, 250, 250, 250],
-        lightColor: '#FF231F7C',
-      });
+        await Notifications.setNotificationChannelAsync('task_alerts', {
+          name: 'Task Alerts',
+          importance: Notifications.AndroidImportance.HIGH,
+          vibrationPattern: [0, 250, 250, 250],
+          lightColor: '#FF231F7C',
+        });
+      } catch (channelError) {
+        console.log('expo-notifications: Could not create notification channels (expected in Expo Go SDK 53+)');
+      }
     }
 
     // Request permission
     const permissionGranted = await requestNotificationPermission();
     if (!permissionGranted) {
+      console.log('Notification permission not granted');
       return false;
     }
 
     // Get token
     const token = await getPushToken();
     if (!token) {
+      console.log('Could not get push token');
       return false;
     }
 
@@ -174,7 +198,7 @@ export const initializeNotifications = async () => {
     const registered = await registerTokenWithBackend(token);
     return registered;
   } catch (error) {
-    console.error('Error initializing notifications:', error);
+    console.log('expo-notifications: Initialization skipped (expected in Expo Go SDK 53+):', error.message);
     return false;
   }
 };
@@ -191,20 +215,30 @@ export const setupNotificationListeners = (
 ) => {
   const subscriptions = [];
 
-  // Listener for notifications received while app is foregrounded
-  if (onNotificationReceived) {
-    const subscription = Notifications.addNotificationReceivedListener((notification) => {
-      onNotificationReceived(notification);
-    });
-    subscriptions.push(subscription);
+  // Skip if in Expo Go SDK 53+
+  if (isExpoGoSDK53Plus()) {
+    console.log('expo-notifications: Skipping listener setup (Expo Go SDK 53+)');
+    return subscriptions;
   }
 
-  // Listener for when user taps on or interacts with a notification
-  if (onNotificationTapped) {
-    const subscription = Notifications.addNotificationResponseReceivedListener((response) => {
-      onNotificationTapped(response);
-    });
-    subscriptions.push(subscription);
+  try {
+    // Listener for notifications received while app is foregrounded
+    if (onNotificationReceived) {
+      const subscription = Notifications.addNotificationReceivedListener((notification) => {
+        onNotificationReceived(notification);
+      });
+      subscriptions.push(subscription);
+    }
+
+    // Listener for when user taps on or interacts with a notification
+    if (onNotificationTapped) {
+      const subscription = Notifications.addNotificationResponseReceivedListener((response) => {
+        onNotificationTapped(response);
+      });
+      subscriptions.push(subscription);
+    }
+  } catch (error) {
+    console.log('expo-notifications: Could not setup notification listeners (expected in Expo Go SDK 53+)');
   }
 
   return subscriptions;

@@ -18,7 +18,12 @@ const LocationPicker = ({ coordinates, address, loading, onLocationChange }) => 
 
     const getCurrentLocation = async () => {
         try {
-            const location = await Location.getCurrentPositionAsync({});
+            // Optimization: Try last known position first
+            let location = await Location.getLastKnownPositionAsync({});
+
+            if (!location) {
+                location = await Location.getCurrentPositionAsync({});
+            }
             const { latitude, longitude } = location.coords;
 
             const geocode = await Location.reverseGeocodeAsync({ latitude, longitude });

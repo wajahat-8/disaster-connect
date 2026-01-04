@@ -23,7 +23,6 @@
       "bundleIdentifier": "com.disasterconnect.app"
     },
     "android": {
-      "usesCleartextTraffic": true,
       "adaptiveIcon": {
         "foregroundImage": "./src/assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
@@ -44,7 +43,6 @@
       "favicon": "./src/assets/favicon.png"
     },
     "plugins": [
-      "expo-maps",
       [
         "expo-notifications",
         {

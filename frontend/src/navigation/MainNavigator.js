@@ -14,12 +14,19 @@ import ShelterListScreen from '../screens/shelter/ShelterListScreen';
 import ShelterDetailScreen from '../screens/shelter/ShelterDetailScreen';
 import AddShelterScreen from '../screens/shelter/AddShelterScreen';
 
+import LostFoundDashboard from '../screens/lostfound/LostFoundDashboard';
+import ReportLostItemScreen from '../screens/lostfound/ReportLostItemScreen';
+import ReportFoundItemScreen from '../screens/lostfound/ReportFoundItemScreen';
+
 import AdminNavigator from './AdminNavigator';
+
+import DonateScreen from '../screens/donation/DonateScreen';
 
 const Tab = createBottomTabNavigator();
 const ProfileStack = createNativeStackNavigator();
 const HomeStack = createNativeStackNavigator();
 const ShelterStack = createNativeStackNavigator();
+const LostFoundStack = createNativeStackNavigator();
 
 function ProfileStackNavigator() {
   return (
@@ -37,6 +44,7 @@ function HomeStackNavigator() {
       <HomeStack.Screen name="ReportDisaster" component={ReportDisasterScreen} options={{ title: 'Report Disaster' }} />
       <HomeStack.Screen name="ViewMap" component={ViewMapScreen} options={{ title: 'Disaster Map' }} />
       <HomeStack.Screen name="NotificationInbox" component={NotificationInboxScreen} options={{ title: 'Notifications' }} />
+      <HomeStack.Screen name="Donate" component={DonateScreen} options={{ title: 'Donate' }} />
     </HomeStack.Navigator>
   );
 }
@@ -48,6 +56,16 @@ function ShelterStackNavigator() {
       <ShelterStack.Screen name="ShelterDetail" component={ShelterDetailScreen} options={{ title: 'Shelter Details' }} />
       <ShelterStack.Screen name="AddShelter" component={AddShelterScreen} options={{ title: 'Add New Shelter' }} />
     </ShelterStack.Navigator>
+  );
+}
+
+function LostFoundStackNavigator() {
+  return (
+    <LostFoundStack.Navigator>
+      <LostFoundStack.Screen name="LostFoundDashboard" component={LostFoundDashboard} options={{ title: 'Lost & Found' }} />
+      <LostFoundStack.Screen name="ReportLostItem" component={ReportLostItemScreen} options={{ title: 'Report Lost Item' }} />
+      <LostFoundStack.Screen name="ReportFoundItem" component={ReportFoundItemScreen} options={{ title: 'Report Found Item' }} />
+    </LostFoundStack.Navigator>
   );
 }
 
@@ -70,6 +88,8 @@ export default function MainNavigator() {
             iconName = focused ? 'shield' : 'shield-outline';
           } else if (route.name === 'Profile') {
             iconName = focused ? 'person' : 'person-outline';
+          } else if (route.name === 'Lost & Found') {
+            iconName = focused ? 'search' : 'search-outline';
           }
 
           return <Ionicons name={iconName} size={size} color={color} />;
@@ -80,6 +100,7 @@ export default function MainNavigator() {
     >
       <Tab.Screen name="Home" component={HomeStackNavigator} options={{ headerShown: false }} />
       <Tab.Screen name="Shelters" component={ShelterStackNavigator} options={{ headerShown: false }} />
+      <Tab.Screen name="Lost & Found" component={LostFoundStackNavigator} options={{ headerShown: false }} />
       <Tab.Screen name="Map" component={ViewMapScreen} />
       {isAdmin && (
         <Tab.Screen

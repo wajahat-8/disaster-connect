@@ -118,6 +118,20 @@ const AdminDashboardScreen = ({ navigation }) => {
                     color={theme.colors.primaryContainer}
                     onPress={() => navigation.navigate('ManageShelters')}
                 />
+                <AdminMenuButton
+                    title="Manage Lost & Found"
+                    subtitle="View and delete lost & found items"
+                    icon="package-variant"
+                    color="#e91e63"
+                    onPress={() => navigation.navigate('ManageLostFound')}
+                />
+                <AdminMenuButton
+                    title="Manage Donations"
+                    subtitle="View donation summary and history"
+                    icon="hand-coin"
+                    color="#2ecc71"
+                    onPress={() => navigation.navigate('ManageDonations')}
+                />
             </View>
         </ScrollView>
     );

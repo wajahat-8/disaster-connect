@@ -1,7 +1,7 @@
 import React from 'react';
-import { View, StyleSheet } from 'react-native';
+import { View, StyleSheet, Platform } from 'react-native';
 import { Text, Surface, IconButton } from 'react-native-paper';
-import MapView, { Marker, Callout } from 'react-native-maps';
+import MapView from 'react-native-maps';
 import ShelterMarker from './ShelterMarker';
 
 /**
@@ -14,6 +14,22 @@ import ShelterMarker from './ShelterMarker';
  * @param {Function} props.onShelterPress - Callback when shelter is selected
  */
 const ShelterMapView = ({ region, shelters, viewMode, onViewModeToggle, onShelterPress }) => {
+    const defaultRegion = {
+        latitude: 31.5204,
+        longitude: 74.3587,
+        latitudeDelta: 0.0922,
+        longitudeDelta: 0.0421,
+    };
+    const mapRegion = region || defaultRegion;
+    const mapRef = React.useRef(null);
+
+    // Update map region when location changes
+    React.useEffect(() => {
+        if (mapRef.current && region) {
+            mapRef.current.animateToRegion(region, 1000);
+        }
+    }, [region]);
+
     if (viewMode === 'list') {
         return null;
     }
@@ -21,19 +37,29 @@ const ShelterMapView = ({ region, shelters, viewMode, onViewModeToggle, onShelte
     return (
         <View style={styles.mapContainer}>
             <MapView
+                ref={mapRef}
                 style={styles.map}
-                region={region}
+                initialRegion={mapRegion}
                 showsUserLocation={true}
+                showsMyLocationButton={false}
                 showsCompass={true}
-                showsScale={true}
+                showsScale={Platform.OS === 'ios'}
+                onMapReady={() => {
+                }}
             >
-                {shelters.map((shelter) => (
-                    <ShelterMarker
-                        key={shelter._id}
-                        shelter={shelter}
-                        onPress={onShelterPress}
-                    />
-                ))}
+                {shelters.map((shelter) => {
+                    if (!shelter.location || !shelter.location.coordinates) {
+                        console.warn('[ShelterMapView] Shelter missing location:', shelter);
+                        return null;
+                    }
+                    return (
+                        <ShelterMarker
+                            key={shelter._id}
+                            shelter={shelter}
+                            onPress={onShelterPress}
+                        />
+                    );
+                })}
             </MapView>
 
             {/* View mode toggle button */}

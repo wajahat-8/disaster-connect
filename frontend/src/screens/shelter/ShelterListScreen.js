@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, FlatList, Alert } from 'react-native';
 import { Text, Searchbar, useTheme, Button, FAB, IconButton } from 'react-native-paper';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { useShelters } from '../../hooks/useShelters';
 import { useAuth } from '../../auth';
 import * as Location from 'expo-location';
 import { ShelterCard, ShelterMapView } from './components';
 import { formatDistance } from '../../utils/locationUtils';
+import AppLoader from '../../components/common/AppLoader';
+import LocationPermissionPrompt from '../../components/common/LocationPermissionPrompt';
 
 /**
  * Screen for listing and finding nearby shelters.
@@ -18,16 +20,35 @@ export default function ShelterListScreen() {
     const { user } = useAuth();
     const { shelters, loading, error, fetchShelters } = useShelters();
 
-    const [location, setLocation] = useState(null);
+    // Default to a central location (e.g. city center) if location not yet found
+    const [location, setLocation] = useState({
+        latitude: 31.5204,
+        longitude: 74.3587,
+        latitudeDelta: 0.0922,
+        longitudeDelta: 0.0421,
+    });
     const [searchQuery, setSearchQuery] = useState('');
     const [viewMode, setViewMode] = useState('list'); // 'list', 'map', or 'both'
     const [nearestShelter, setNearestShelter] = useState(null);
+    const [locationPermissionDenied, setLocationPermissionDenied] = useState(false);
 
     // ============ Initialization ============
 
+
+
+    // ============ Initialization ============
+
+    // Fetch data when screen comes into focus (e.g. after adding a shelter)
+    useFocusEffect(
+        React.useCallback(() => {
+            initializeLocation();
+        }, [])
+    );
+
+    // Initial location setup (runs once on mount)
     useEffect(() => {
         initializeLocation();
-    }, [fetchShelters]);
+    }, []);
 
     useEffect(() => {
         if (error) {
@@ -36,25 +57,43 @@ export default function ShelterListScreen() {
     }, [error]);
 
     const initializeLocation = async () => {
-        let { status } = await Location.requestForegroundPermissionsAsync();
-        if (status !== 'granted') {
-            Alert.alert('Permission Denied', 'Permission to access location was denied. Map features may be limited.');
-            fetchShelters({});
-            return;
+        try {
+            // Check permission first
+            let { status } = await Location.requestForegroundPermissionsAsync();
+            if (status !== 'granted') {
+                setLocationPermissionDenied(true);
+                return;
+            }
+
+            setLocationPermissionDenied(false);
+
+            // Optimization: Try to get last known position first (instant)
+            let loc = await Location.getLastKnownPositionAsync({});
+
+            // If no last known location, wait for current position (slower but accurate)
+            if (!loc) {
+                loc = await Location.getCurrentPositionAsync({});
+            }
+
+            if (loc) {
+                setLocation({
+                    latitude: loc.coords.latitude,
+                    longitude: loc.coords.longitude,
+                    latitudeDelta: 0.0922,
+                    longitudeDelta: 0.0421,
+                });
+
+                // Radius increased to 10000km to ensure admin added shelters (likely far away) are shown during testing
+                fetchShelters({
+                    lat: loc.coords.latitude,
+                    lng: loc.coords.longitude,
+                    radius: 10000
+                });
+            }
+        } catch (error) {
+            console.error('Error initializing location:', error);
+            setLocationPermissionDenied(true);
         }
-
-        let loc = await Location.getCurrentPositionAsync({});
-        setLocation({
-            latitude: loc.coords.latitude,
-            longitude: loc.coords.longitude,
-            latitudeDelta: 0.0922,
-            longitudeDelta: 0.0421,
-        });
-
-        fetchShelters({
-            lat: loc.coords.latitude,
-            lng: loc.coords.longitude
-        });
     };
 
     // Update nearest shelter when shelters change
@@ -75,7 +114,8 @@ export default function ShelterListScreen() {
         fetchShelters({
             search: searchQuery,
             lat: location?.latitude,
-            lng: location?.longitude
+            lng: location?.longitude,
+            radius: 10000
         });
     };
 
@@ -83,7 +123,8 @@ export default function ShelterListScreen() {
         fetchShelters({
             search: searchQuery,
             lat: location?.latitude,
-            lng: location?.longitude
+            lng: location?.longitude,
+            radius: 10000
         });
     };
 
@@ -122,6 +163,11 @@ export default function ShelterListScreen() {
 
     // ============ Render ============
 
+    // Show location permission prompt if denied
+    if (locationPermissionDenied) {
+        return <LocationPermissionPrompt />;
+    }
+
     return (
         <View style={styles.container}>
             {/* Search Bar */}
@@ -149,6 +195,9 @@ export default function ShelterListScreen() {
                 )}
             </View>
 
+            {/* Loading Overlay */}
+            <AppLoader visible={loading} overlay message="Loading shelters..." />
+
             {/* Map View */}
             <ShelterMapView
                 region={location}
@@ -159,44 +208,48 @@ export default function ShelterListScreen() {
             />
 
             {/* List View */}
-            {viewMode !== 'map' && (
-                <View style={styles.listContainer}>
-                    <View style={styles.listHeader}>
-                        <Text variant="titleSmall" style={{ color: 'gray' }}>
-                            {shelters.length} Shelters found
-                        </Text>
-                        <Button mode="text" compact onPress={toggleListExpand}>
-                            {viewMode === 'both' ? 'Expand List' : 'Show Map'}
-                        </Button>
+            {
+                viewMode !== 'map' && (
+                    <View style={styles.listContainer}>
+                        <View style={styles.listHeader}>
+                            <Text variant="titleSmall" style={{ color: 'gray' }}>
+                                {shelters.length} Shelters found
+                            </Text>
+                            <Button mode="text" compact onPress={toggleListExpand}>
+                                {viewMode === 'both' ? 'Expand List' : 'Show Map'}
+                            </Button>
+                        </View>
+                        <FlatList
+                            data={shelters}
+                            renderItem={({ item }) => (
+                                <ShelterCard
+                                    shelter={item}
+                                    onPress={() => handleShelterPress(item)}
+                                    userLocation={location}
+                                    isNearest={nearestShelter?._id === item._id}
+                                />
+                            )}
+                            keyExtractor={(item) => item._id}
+                            contentContainerStyle={styles.listContent}
+                            showsVerticalScrollIndicator={false}
+                        />
                     </View>
-                    <FlatList
-                        data={shelters}
-                        renderItem={({ item }) => (
-                            <ShelterCard
-                                shelter={item}
-                                onPress={() => handleShelterPress(item)}
-                                userLocation={location}
-                                isNearest={nearestShelter?._id === item._id}
-                            />
-                        )}
-                        keyExtractor={(item) => item._id}
-                        contentContainerStyle={styles.listContent}
-                        showsVerticalScrollIndicator={false}
-                    />
-                </View>
-            )}
+                )
+            }
 
             {/* Admin FAB */}
-            {user?.role === 'admin' && (
-                <FAB
-                    icon="plus"
-                    label="Add Shelter"
-                    style={[styles.fab, { backgroundColor: theme.colors.primary }]}
-                    color="white"
-                    onPress={() => navigation.navigate('AddShelter')}
-                />
-            )}
-        </View>
+            {
+                user?.role === 'admin' && (
+                    <FAB
+                        icon="plus"
+                        label="Add Shelter"
+                        style={[styles.fab, { backgroundColor: theme.colors.primary }]}
+                        color="white"
+                        onPress={() => navigation.navigate('AddShelter')}
+                    />
+                )
+            }
+        </View >
     );
 }
 

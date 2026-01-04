@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { View, StyleSheet, ScrollView, Linking, Platform } from 'react-native';
+import { View, StyleSheet, ScrollView, Linking, Platform, Modal } from 'react-native';
 import { Text, Chip, Divider, useTheme, Surface } from 'react-native-paper';
 import AppButton from '../../components/common/AppButton';
 import MapView, { Marker } from 'react-native-maps';
@@ -31,6 +31,11 @@ export default function ShelterDetailScreen({ route, navigation }) {
 
     // ============ Helpers ============
 
+    // ============ State ============
+    const [mapVisible, setMapVisible] = React.useState(false);
+
+    // ============ Helpers ============
+
     const openMaps = () => {
         const scheme = Platform.select({ ios: 'maps:0,0?q=', android: 'geo:0,0?q=' });
         const latLng = `${shelter.location.coordinates[1]},${shelter.location.coordinates[0]}`;
@@ -55,103 +60,159 @@ export default function ShelterDetailScreen({ route, navigation }) {
     // ============ Render ============
 
     return (
-        <ScrollView style={styles.container} bounces={false}>
-            {/* Map Header */}
-            <View style={styles.mapContainer}>
-                <MapView
-                    style={styles.map}
-                    initialRegion={{
-                        latitude: shelter.location.coordinates[1],
-                        longitude: shelter.location.coordinates[0],
-                        latitudeDelta: 0.005,
-                        longitudeDelta: 0.005,
-                    }}
-                    scrollEnabled={false}
-                    zoomEnabled={false}
-                    pitchEnabled={false}
-                    rotateEnabled={false}
-                >
-                    <Marker
-                        coordinate={{
+        <>
+            <ScrollView style={styles.container} bounces={false}>
+                {/* Map Header */}
+                <View style={styles.mapContainer}>
+                    <MapView
+                        style={styles.map}
+                        initialRegion={{
                             latitude: shelter.location.coordinates[1],
                             longitude: shelter.location.coordinates[0],
+                            latitudeDelta: 0.005,
+                            longitudeDelta: 0.005,
                         }}
-                    />
-                </MapView>
-                <Surface style={styles.mapOverlay} elevation={2} />
-            </View>
-
-            <View style={styles.contentContainer}>
-                {/* Header with name and verified status */}
-                <View style={styles.header}>
-                    <Text variant="headlineMedium" style={styles.title} numberOfLines={3}>
-                        {shelter.name}
-                    </Text>
-                    <View style={styles.verifiedContainer}>
-                        {shelter.verified ? (
-                            <Chip
-                                icon="check-decagram"
-                                style={styles.verifiedChip}
-                                textStyle={{
-                                    color: 'green',
-                                    fontSize: 12,
-                                    lineHeight: 14,
-                                    marginVertical: 0
-                                }}
-                            >
-                                Verified Shelter
-                            </Chip>
-                        ) : (
-                            <Chip
-                                icon="alert-circle-outline"
-                                style={styles.unverifiedChip}
-                                textStyle={{
-                                    color: 'orange',
-                                    fontSize: 12,
-                                    lineHeight: 14,
-                                    marginVertical: 0
-                                }}
-                            >
-                                Unverified
-                            </Chip>
-                        )}
-                    </View>
+                        scrollEnabled={false}
+                        zoomEnabled={false}
+                        pitchEnabled={false}
+                        rotateEnabled={false}
+                    >
+                        <Marker
+                            coordinate={{
+                                latitude: shelter.location.coordinates[1],
+                                longitude: shelter.location.coordinates[0],
+                            }}
+                        />
+                    </MapView>
+                    {/* Expand Map Button */}
+                    <Surface style={styles.expandButtonContainer} elevation={4}>
+                        <MaterialCommunityIcons
+                            name="arrow-expand-all"
+                            size={24}
+                            color={theme.colors.primary}
+                            onPress={() => setMapVisible(true)}
+                        />
+                    </Surface>
+                    <Surface style={styles.mapOverlay} elevation={2} />
                 </View>
 
-                {/* Availability Status Card */}
-                <View style={styles.statusGrid}>
-                    <Surface style={[styles.statusCard, { borderLeftColor: occupancyColor, borderLeftWidth: 4 }]} elevation={1}>
-                        <MaterialCommunityIcons name="bed-empty" size={24} color={occupancyColor} />
-                        <View style={styles.statusText}>
-                            <Text variant="labelMedium" style={{ color: 'gray' }}>Availability</Text>
-                            <Text variant="titleMedium" style={{ fontWeight: 'bold' }}>
-                                {shelter.availableBeds || 0} / {shelter.capacity || 0}
-                            </Text>
+                <View style={styles.contentContainer}>
+                    {/* Header with name and verified status */}
+                    <View style={styles.header}>
+                        <Text variant="headlineMedium" style={styles.title} numberOfLines={3}>
+                            {shelter.name}
+                        </Text>
+                        <View style={styles.verifiedContainer}>
+                            {shelter.verified ? (
+                                <Chip
+                                    icon="check-decagram"
+                                    style={styles.verifiedChip}
+                                    textStyle={{
+                                        color: 'green',
+                                        fontSize: 12,
+                                        lineHeight: 14,
+                                        marginVertical: 0
+                                    }}
+                                >
+                                    Verified Shelter
+                                </Chip>
+                            ) : (
+                                <Chip
+                                    icon="alert-circle-outline"
+                                    style={styles.unverifiedChip}
+                                    textStyle={{
+                                        color: 'orange',
+                                        fontSize: 12,
+                                        lineHeight: 14,
+                                        marginVertical: 0
+                                    }}
+                                >
+                                    Unverified
+                                </Chip>
+                            )}
                         </View>
+                    </View>
+
+                    {/* Availability Status Card */}
+                    <View style={styles.statusGrid}>
+                        <Surface style={[styles.statusCard, { borderLeftColor: occupancyColor, borderLeftWidth: 4 }]} elevation={1}>
+                            <MaterialCommunityIcons name="bed-empty" size={24} color={occupancyColor} />
+                            <View style={styles.statusText}>
+                                <Text variant="labelMedium" style={{ color: 'gray' }}>Availability</Text>
+                                <Text variant="titleMedium" style={{ fontWeight: 'bold' }}>
+                                    {shelter.availableBeds || 0} / {shelter.capacity || 0}
+                                </Text>
+                            </View>
+                        </Surface>
+                    </View>
+
+                    <Divider style={styles.divider} />
+
+                    {/* Facilities Section */}
+                    <FacilitiesList facilities={shelter.facilities || []} />
+
+                    <Divider style={styles.divider} />
+
+                    {/* Contact Section */}
+                    <ContactInfo contactInfo={shelter.contactInfo || {}} />
+
+                    {/* Get Directions Button */}
+                    <AppButton
+                        mode="contained"
+                        icon="navigation"
+                        text="Get Directions"
+                        onPress={openMaps}
+                        style={styles.navButton}
+                        contentStyle={{ height: 50 }}
+                    />
+                    {/* View on Map Button (Secondary) */}
+                    <AppButton
+                        mode="outlined"
+                        icon="map"
+                        text="View Full Map"
+                        onPress={() => setMapVisible(true)}
+                        style={styles.viewMapButton}
+                    />
+                </View>
+            </ScrollView>
+
+            {/* Full Screen Map Modal */}
+            <Modal
+                animationType="slide"
+                visible={mapVisible}
+                onRequestClose={() => setMapVisible(false)}
+            >
+                <View style={styles.fullScreenMapContainer}>
+                    <MapView
+                        style={styles.fullScreenMap}
+                        initialRegion={{
+                            latitude: shelter.location.coordinates[1],
+                            longitude: shelter.location.coordinates[0],
+                            latitudeDelta: 0.01,
+                            longitudeDelta: 0.01,
+                        }}
+                        showsUserLocation={true}
+                    >
+                        <Marker
+                            coordinate={{
+                                latitude: shelter.location.coordinates[1],
+                                longitude: shelter.location.coordinates[0],
+                            }}
+                            title={shelter.name}
+                            description="Shelter Location"
+                        />
+                    </MapView>
+                    <Surface style={styles.closeMapButton} elevation={4}>
+                        <MaterialCommunityIcons
+                            name="close"
+                            size={24}
+                            color="black"
+                            onPress={() => setMapVisible(false)}
+                        />
                     </Surface>
                 </View>
-
-                <Divider style={styles.divider} />
-
-                {/* Facilities Section */}
-                <FacilitiesList facilities={shelter.facilities || []} />
-
-                <Divider style={styles.divider} />
-
-                {/* Contact Section */}
-                <ContactInfo contactInfo={shelter.contactInfo || {}} />
-
-                {/* Get Directions Button */}
-                <AppButton
-                    mode="contained"
-                    icon="navigation"
-                    text="Get Directions"
-                    onPress={openMaps}
-                    style={styles.navButton}
-                    contentStyle={{ height: 50 }}
-                />
-            </View>
-        </ScrollView>
+            </Modal>
+        </>
     );
 }
 
@@ -168,9 +229,21 @@ const styles = StyleSheet.create({
     mapContainer: {
         height: 250,
         width: '100%',
+        position: 'relative',
     },
     map: {
         ...StyleSheet.absoluteFillObject,
+    },
+    expandButtonContainer: {
+        position: 'absolute',
+        top: 20,
+        right: 20,
+        backgroundColor: 'white',
+        borderRadius: 20,
+        padding: 8,
+        justifyContent: 'center',
+        alignItems: 'center',
+        zIndex: 10,
     },
     mapOverlay: {
         position: 'absolute',
@@ -233,4 +306,26 @@ const styles = StyleSheet.create({
         marginTop: 20,
         borderRadius: 12,
     },
+    viewMapButton: {
+        marginTop: 10,
+        borderRadius: 12,
+        borderColor: '#ddd'
+    },
+    fullScreenMapContainer: {
+        flex: 1,
+        position: 'relative'
+    },
+    fullScreenMap: {
+        flex: 1,
+    },
+    closeMapButton: {
+        position: 'absolute',
+        top: 40,
+        left: 20,
+        backgroundColor: 'white',
+        borderRadius: 20,
+        padding: 8,
+        justifyContent: 'center',
+        alignItems: 'center',
+    }
 });

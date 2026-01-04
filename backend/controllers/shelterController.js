@@ -35,6 +35,8 @@ exports.getShelters = async (req, res) => {
             query.name = { $regex: search, $options: 'i' };
         }
 
+
+
         // Location-based query with geospatial search
         if (lat && lng) {
             const latitude = parseFloat(lat);
@@ -68,6 +70,8 @@ exports.getShelters = async (req, res) => {
             // No location provided, return all shelters
             shelters = await Shelter.find(query);
         }
+
+
 
         res.status(200).json({
             success: true,

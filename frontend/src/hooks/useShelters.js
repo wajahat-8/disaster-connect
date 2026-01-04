@@ -45,6 +45,9 @@ export const useShelters = () => {
             if (radius) queryParams.append('radius', radius);
             if (search) queryParams.append('search', search);
 
+            if (radius) queryParams.append('radius', radius);
+            if (search) queryParams.append('search', search);
+
             const response = await apiClient.get(`/shelters?${queryParams.toString()}`);
 
             if (response.data.success) {

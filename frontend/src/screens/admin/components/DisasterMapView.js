@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, Alert, ActivityIndicator } from 'react-native';
+import { View, StyleSheet, Alert, ActivityIndicator, Platform } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
 import * as Location from 'expo-location';
 
@@ -65,20 +65,35 @@ const DisasterMapView = ({ disasters, onMarkerPress, onDelete }) => {
     }
 
     return (
-        <MapView style={styles.map} initialRegion={region} showsUserLocation>
-            {disasters.map((disaster, index) => (
-                <Marker
-                    key={disaster._id || index}
-                    coordinate={{
-                        latitude: disaster.location.coordinates[1],
-                        longitude: disaster.location.coordinates[0],
-                    }}
-                    pinColor={getMarkerColor(disaster.severity)}
-                    onPress={() => onMarkerPress && onMarkerPress(disaster)}
-                    title={disaster.type.toUpperCase()}
-                    description={disaster.description}
-                />
-            ))}
+        <MapView
+            style={styles.map}
+            initialRegion={region}
+            showsUserLocation={true}
+            showsMyLocationButton={false}
+            showsCompass={true}
+            loadingEnabled={true}
+            loadingIndicatorColor="#00695C"
+            loadingBackgroundColor="#ffffff"
+        >
+            {disasters.map((disaster, index) => {
+                if (!disaster.location || !disaster.location.coordinates) {
+                    console.warn('[DisasterMapView] Disaster missing location:', disaster);
+                    return null;
+                }
+                return (
+                    <Marker
+                        key={disaster._id || index}
+                        coordinate={{
+                            latitude: disaster.location.coordinates[1],
+                            longitude: disaster.location.coordinates[0],
+                        }}
+                        pinColor={getMarkerColor(disaster.severity)}
+                        onPress={() => onMarkerPress && onMarkerPress(disaster)}
+                        title={disaster.type.toUpperCase()}
+                        description={disaster.description}
+                    />
+                );
+            })}
         </MapView>
     );
 };

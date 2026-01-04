@@ -9,6 +9,8 @@ import ManageDisastersScreen from '../screens/admin/ManageDisastersScreen';
 import AdminUsersScreen from '../screens/admin/AdminUsersScreen';
 import SendNotificationScreen from '../screens/admin/SendNotificationScreen';
 import ManageSheltersScreen from '../screens/admin/ManageSheltersScreen';
+import ManageLostFoundScreen from '../screens/admin/ManageLostFoundScreen';
+import DonationsListScreen from '../screens/admin/DonationsListScreen';
 
 // Shelter Screens (for detail view from ManageSheltersScreen)
 import ShelterDetailScreen from '../screens/shelter/ShelterDetailScreen';
@@ -55,6 +57,16 @@ export default function AdminNavigator() {
                 name="ManageShelters"
                 component={ManageSheltersScreen}
                 options={{ title: 'Manage Shelters' }}
+            />
+            <Stack.Screen
+                name="ManageLostFound"
+                component={ManageLostFoundScreen}
+                options={{ title: 'Manage Lost & Found' }}
+            />
+            <Stack.Screen
+                name="ManageDonations"
+                component={DonationsListScreen}
+                options={{ title: 'Manage Donations' }}
             />
             <Stack.Screen
                 name="ShelterDetail"

@@ -273,3 +273,28 @@ exports.getAlerts = asyncHandler(async (req, res) => {
     data: alerts
   });
 });
+
+/**
+ * @route   DELETE /api/notifications/:id
+ * @desc    Delete a notification
+ * @access  Private
+ */
+exports.deleteNotification = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const userId = req.user.id;
+
+  const notification = await UserNotification.findOneAndDelete({ _id: id, userId });
+
+  if (!notification) {
+    return res.status(404).json({
+      success: false,
+      message: 'Notification not found'
+    });
+  }
+
+  res.status(200).json({
+    success: true,
+    message: 'Notification deleted',
+    data: {}
+  });
+});

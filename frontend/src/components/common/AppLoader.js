@@ -16,14 +16,14 @@ export default function AppLoader({
         return (
             <Modal transparent animationType="fade" visible={visible}>
                 <View style={styles.overlayContainer}>
-                    <Surface style={styles.surface} elevation={4}>
+                    <View style={styles.surface}>
                         <ActivityIndicator size="large" color={theme.colors.primary} />
                         {message && (
-                            <Text variant="bodyMedium" style={styles.message}>
+                            <Text variant="bodyMedium" style={[styles.message, { color: 'white' }]}>
                                 {message}
                             </Text>
                         )}
-                    </Surface>
+                    </View>
                 </View>
             </Modal>
         );
@@ -57,7 +57,7 @@ const styles = StyleSheet.create({
         padding: 24,
         borderRadius: 12,
         alignItems: 'center',
-        backgroundColor: 'white',
+        // backgroundColor: 'white', // Removed for transparent look
         minWidth: 150,
     },
     message: {

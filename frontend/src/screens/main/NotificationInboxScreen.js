@@ -46,7 +46,7 @@ const NotificationInboxScreen = ({ navigation }) => {
 
     const handleMarkAsRead = async (notificationId) => {
         try {
-            await apiClient.patch(`/notifications/${notificationId}/read`);
+            // Optimistic update
             setNotifications(prev =>
                 prev.map(notif =>
                     notif._id === notificationId
@@ -55,8 +55,30 @@ const NotificationInboxScreen = ({ navigation }) => {
                 )
             );
             setUnreadCount(prev => Math.max(0, prev - 1));
+
+            // API call in background
+            await apiClient.patch(`/notifications/${notificationId}/read`);
         } catch (error) {
             console.error('Error marking as read:', error);
+            // Revert on error would be here, but for read status it's low risk
+        }
+    };
+
+    const handleDelete = async (notificationId) => {
+        try {
+            // Optimistic update
+            const notificationToDelete = notifications.find(n => n._id === notificationId);
+            setNotifications(prev => prev.filter(n => n._id !== notificationId));
+
+            if (!notificationToDelete?.isRead) {
+                setUnreadCount(prev => Math.max(0, prev - 1));
+            }
+
+            await apiClient.delete(`/notifications/${notificationId}`);
+        } catch (error) {
+            console.error('Error deleting notification:', error);
+            loadNotifications(); // Reload on error
+            alert('Failed to delete notification');
         }
     };
 
@@ -112,6 +134,7 @@ const NotificationInboxScreen = ({ navigation }) => {
                 <AppCard
                     style={[
                         styles.card,
+                        { backgroundColor: item.isRead ? theme.colors.background : theme.colors.surface },
                         !item.isRead && { borderLeftColor: theme.colors.primary, borderLeftWidth: 4 }
                     ]}
                     contentStyle={styles.cardContent}
@@ -131,7 +154,16 @@ const NotificationInboxScreen = ({ navigation }) => {
                                 >
                                     {item.title}
                                 </Text>
-                                <Text style={styles.time}>{getTimeAgo(item.createdAt)}</Text>
+                                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                    <Text style={styles.time}>{getTimeAgo(item.createdAt)}</Text>
+                                    <TouchableOpacity
+                                        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                                        onPress={() => handleDelete(item._id)}
+                                        style={{ marginLeft: 8 }}
+                                    >
+                                        <Ionicons name="trash-outline" size={18} color="#e74c3c" />
+                                    </TouchableOpacity>
+                                </View>
                             </View>
                             <Text style={styles.body} numberOfLines={2}>
                                 {item.body}

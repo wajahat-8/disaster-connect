@@ -1,25 +1,28 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { View, StyleSheet, Alert } from 'react-native';
-import MapView from 'react-native-maps';
-import { useTheme } from 'react-native-paper';
+import { View, StyleSheet, Alert, Platform } from 'react-native';
+import MapView, { Marker } from 'react-native-maps';
+import { useTheme, FAB } from 'react-native-paper';
 import { useFocusEffect } from '@react-navigation/native';
 import * as Location from 'expo-location';
 import api from '../../api/apiClient';
 import AppLoader from '../../components/common/AppLoader';
+import LocationPermissionPrompt from '../../components/common/LocationPermissionPrompt';
 import { DisasterMarker, DisasterDetailModal } from './components';
 
 /**
  * Screen showing a map with nearby disaster markers.
- * Users can tap markers to see details about each disaster.
+ * Uses react-native-maps with OpenStreetMap tiles for Expo Go.
  */
 export default function ViewMapScreen({ navigation }) {
   const theme = useTheme();
+  const mapRef = useRef(null);
   const [region, setRegion] = useState(null);
   const [disasters, setDisasters] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedDisaster, setSelectedDisaster] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
-  const regionRef = useRef(null); // Store region to avoid effect dependencies
+  const [locationPermissionDenied, setLocationPermissionDenied] = useState(false);
+  const regionRef = useRef(null);
 
   useEffect(() => {
     initializeMap();
@@ -31,37 +34,42 @@ export default function ViewMapScreen({ navigation }) {
     try {
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== 'granted') {
-        Alert.alert('Permission Required', 'Location permission is needed');
+        setLocationPermissionDenied(true);
+        setLoading(false);
         return;
       }
 
-      const location = await Location.getCurrentPositionAsync({});
+      setLocationPermissionDenied(false);
+
+      const location = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.Balanced,
+      });
       const { latitude, longitude } = location.coords;
 
-      const newRegion = { latitude, longitude, latitudeDelta: 0.0922, longitudeDelta: 0.0421 };
+      const newRegion = {
+        latitude,
+        longitude,
+        latitudeDelta: 0.1,
+        longitudeDelta: 0.1,
+      };
       setRegion(newRegion);
       regionRef.current = newRegion;
       fetchDisasters(latitude, longitude);
     } catch (error) {
-      console.error('Location error:', error);
-      // Default to San Francisco
-      const defaultLat = 37.78825;
-      const defaultLng = -122.4324;
-      const newRegion = { latitude: defaultLat, longitude: defaultLng, latitudeDelta: 0.0922, longitudeDelta: 0.0421 };
-      setRegion(newRegion);
-      regionRef.current = newRegion;
-      fetchDisasters(defaultLat, defaultLng);
+      console.error('[ViewMapScreen] Location error:', error);
+      setLocationPermissionDenied(true);
+      setLoading(false);
     }
   };
 
   const fetchDisasters = async (lat, lng) => {
     try {
-      const response = await api.get('/disasters/nearby', { params: { lat, lng, radius: 50 } });
+      const response = await api.get('/disasters/nearby', { params: { lat, lng, radius: 10000 } });
       if (response.data.success) {
         setDisasters(response.data.disasters);
       }
     } catch (error) {
-      console.error('Fetch disasters error:', error);
+      console.error('[ViewMapScreen] Fetch disasters error:', error);
     } finally {
       setLoading(false);
     }
@@ -81,14 +89,40 @@ export default function ViewMapScreen({ navigation }) {
 
   const onMarkerPress = (disaster) => {
     setSelectedDisaster(disaster);
-    setModalVisible(true); // Open modal when marker is pressed
-  };
-
-  const onCalloutPress = () => {
     setModalVisible(true);
   };
 
+  const centerOnUserLocation = async () => {
+    try {
+      const location = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.Balanced,
+      });
+      const { latitude, longitude } = location.coords;
+
+      const newRegion = {
+        latitude,
+        longitude,
+        latitudeDelta: 0.1,
+        longitudeDelta: 0.1,
+      };
+
+      if (mapRef.current) {
+        mapRef.current.animateToRegion(newRegion, 1000);
+      }
+      setRegion(newRegion);
+      regionRef.current = newRegion;
+    } catch (error) {
+      console.error('Error getting location:', error);
+      Alert.alert('Error', 'Could not get your location');
+    }
+  };
+
   // ============ Render ============
+
+  // Show location permission prompt if denied
+  if (locationPermissionDenied) {
+    return <LocationPermissionPrompt />;
+  }
 
   if (loading || !region) {
     return (
@@ -101,29 +135,44 @@ export default function ViewMapScreen({ navigation }) {
   return (
     <View style={styles.container}>
       <MapView
+        ref={mapRef}
         style={styles.map}
-        region={region}
+        initialRegion={region}
         showsUserLocation={true}
+        showsMyLocationButton={false}
         showsCompass={true}
-        showsScale={true}
+        showsScale={Platform.OS === 'ios'}
+        onMapReady={() => {
+        }}
         onRegionChangeComplete={(newRegion) => {
-          setRegion(newRegion);
           regionRef.current = newRegion;
         }}
-        mapPadding={{ top: 0, right: 0, bottom: 0, left: 0 }}
-        cacheEnabled={false}
-        moveOnMarkerPress={false}
-        toolbarEnabled={false} // Prevents extra UI that can cause layout shifts
       >
-        {disasters.map((disaster, index) => (
-          <DisasterMarker
-            key={disaster._id || index}
-            disaster={disaster}
-            onPress={onMarkerPress}
-            onCalloutPress={onCalloutPress}
-          />
-        ))}
+        {disasters.map((disaster, index) => {
+          if (!disaster.location || !disaster.location.coordinates) {
+            console.warn('[ViewMapScreen] Disaster missing location:', disaster);
+            return null;
+          }
+
+          const [lng, lat] = disaster.location.coordinates;
+
+          return (
+            <DisasterMarker
+              key={disaster._id || index}
+              disaster={disaster}
+              onPress={onMarkerPress}
+            />
+          );
+        })}
       </MapView>
+
+      {/* Floating action button to center on user location */}
+      <FAB
+        icon="crosshairs-gps"
+        style={[styles.fab, { backgroundColor: theme.colors.primary }]}
+        onPress={centerOnUserLocation}
+        color="#ffffff"
+      />
 
       <DisasterDetailModal
         visible={modalVisible}
@@ -145,5 +194,10 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  fab: {
+    position: 'absolute',
+    right: 16,
+    bottom: 16,
   },
 });
