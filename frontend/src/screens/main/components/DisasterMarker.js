@@ -64,7 +64,7 @@ const DisasterMarker = ({ disaster, onPress }) => {
                 }
             }}
             anchor={{ x: 0.5, y: 0.5 }} // Center the circle on the location
-            tracksViewChanges={true} // Disable optimization to ensure render
+            tracksViewChanges={tracksViewChanges} // Use state value for optimization
             renderToHardwareTextureAndroid={false}
             zIndex={1000}
         >

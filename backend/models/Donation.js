@@ -33,8 +33,7 @@ const donationSchema = new mongoose.Schema({
             default: 'Point'
         },
         coordinates: {
-            type: [Number],
-            index: '2dsphere'
+            type: [Number]
         },
         address: String
     },
@@ -43,5 +42,7 @@ const donationSchema = new mongoose.Schema({
         default: Date.now
     }
 });
+
+donationSchema.index({ location: '2dsphere' });
 
 module.exports = mongoose.model('Donation', donationSchema);

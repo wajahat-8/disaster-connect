@@ -26,60 +26,65 @@ export default function LoginScreen({ navigation }) {
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
-      <View style={styles.formContainer}>
-        <Text variant="headlineMedium" style={[styles.title, { color: theme.colors.primary }]}>
-          Welcome Back
-        </Text>
-        <Text variant="bodyMedium" style={styles.subtitle}>
-          Sign in to continue
-        </Text>
-
-        <AppInput
-          label="Email"
-          value={email}
-          onChangeText={setEmail}
-          keyboardType="email-address"
-          autoCapitalize="none"
-          leftIcon="email"
-        />
-
-        <AppInput
-          label="Password"
-          value={password}
-          onChangeText={setPassword}
-          secureTextEntry
-          leftIcon="lock"
-        />
-
-        {error ? (
-          <Text style={{ color: theme.colors.error, textAlign: 'center', marginBottom: 10 }}>
-            {error}
+    <KeyboardAvoidingView
+      style={{ flex: 1, backgroundColor: theme.colors.background }}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+    >
+      <ScrollView contentContainerStyle={styles.container}>
+        <View style={styles.formContainer}>
+          <Text variant="headlineMedium" style={[styles.title, { color: theme.colors.primary }]}>
+            Welcome Back
           </Text>
-        ) : null}
+          <Text variant="bodyMedium" style={[styles.subtitle, { color: theme.colors.textSecondary || 'gray' }]}>
+            Sign in to continue
+          </Text>
 
-        <AppButton
-          mode="contained"
-          text="Login"
-          onPress={handleLogin}
-          loading={loading}
-          style={styles.button}
-        />
+          <AppInput
+            label="Email"
+            value={email}
+            onChangeText={setEmail}
+            keyboardType="email-address"
+            autoCapitalize="none"
+            leftIcon="email"
+          />
 
-        <AppButton
-          mode="text"
-          text="Forgot Password?"
-          onPress={() => navigation.navigate('ForgotPassword')}
-        />
+          <AppInput
+            label="Password"
+            value={password}
+            onChangeText={setPassword}
+            secureTextEntry
+            leftIcon="lock"
+          />
 
-        <AppButton
-          mode="text"
-          text="Don't have an account? Register"
-          onPress={() => navigation.navigate('Register')}
-          style={styles.textButton}
-        />
-      </View>
-    </View>
+          {error ? (
+            <Text style={{ color: theme.colors.error, textAlign: 'center', marginBottom: 10 }}>
+              {error}
+            </Text>
+          ) : null}
+
+          <AppButton
+            mode="contained"
+            text="Login"
+            onPress={handleLogin}
+            loading={loading}
+            style={styles.button}
+          />
+
+          <AppButton
+            mode="text"
+            text="Forgot Password?"
+            onPress={() => navigation.navigate('ForgotPassword')}
+          />
+
+          <AppButton
+            mode="text"
+            text="Don't have an account? Register"
+            onPress={() => navigation.navigate('Register')}
+            style={styles.textButton}
+          />
+        </View>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 

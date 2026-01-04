@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import apiClient from '../auth/apiClient';
+import apiClient from '../api/apiClient';
 
 /**
  * Custom hook for managing shelter data.
@@ -42,10 +42,6 @@ export const useShelters = () => {
 
             if (lat) queryParams.append('lat', lat);
             if (lng) queryParams.append('lng', lng);
-            if (radius) queryParams.append('radius', radius);
-            if (search) queryParams.append('search', search);
-
-            if (radius) queryParams.append('radius', radius);
             if (search) queryParams.append('search', search);
 
             const response = await apiClient.get(`/shelters?${queryParams.toString()}`);

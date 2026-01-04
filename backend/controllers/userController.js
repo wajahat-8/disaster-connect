@@ -40,7 +40,7 @@ exports.updateProfile = async (req, res) => {
       'location',
       'availability',
       'profileImage',
-      'role'
+      // 'role' - Removed to prevent privilege escalation
     ];
 
     const updates = {};

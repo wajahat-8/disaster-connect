@@ -55,6 +55,6 @@ const styles = StyleSheet.create({
         marginBottom: 12,
     },
     input: {
-        backgroundColor: '#fff',
+        // backgroundColor: '#fff', // Removed to follow theme
     },
 });

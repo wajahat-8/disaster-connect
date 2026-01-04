@@ -87,7 +87,7 @@ export default function ShelterListScreen() {
                 fetchShelters({
                     lat: loc.coords.latitude,
                     lng: loc.coords.longitude,
-                    radius: 10000
+                    radius: 50
                 });
             }
         } catch (error) {
@@ -115,7 +115,7 @@ export default function ShelterListScreen() {
             search: searchQuery,
             lat: location?.latitude,
             lng: location?.longitude,
-            radius: 10000
+            radius: 50
         });
     };
 
@@ -124,7 +124,7 @@ export default function ShelterListScreen() {
             search: searchQuery,
             lat: location?.latitude,
             lng: location?.longitude,
-            radius: 10000
+            radius: 50
         });
     };
 

@@ -225,11 +225,11 @@ const NotificationInboxScreen = ({ navigation }) => {
                 }
                 ListEmptyComponent={
                     <View style={styles.emptyContainer}>
-                        <View style={styles.emptyIconCircle}>
-                            <Ionicons name="notifications-off-outline" size={48} color="#bdc3c7" />
+                        <View style={[styles.emptyIconCircle, { backgroundColor: theme.colors.surfaceVariant }]}>
+                            <Ionicons name="notifications-off-outline" size={48} color={theme.colors.outline} />
                         </View>
-                        <Text style={styles.emptyText}>No notifications found</Text>
-                        <Text style={styles.emptySubtext}>We'll notify you when something important happens.</Text>
+                        <Text style={[styles.emptyText, { color: theme.colors.onSurface }]}>No notifications found</Text>
+                        <Text style={[styles.emptySubtext, { color: theme.colors.onSurfaceVariant }]}>We'll notify you when something important happens.</Text>
                     </View>
                 }
                 contentContainerStyle={styles.listContent}
@@ -302,7 +302,7 @@ const styles = StyleSheet.create({
     },
     title: {
         fontSize: 15,
-        color: '#2c3e50',
+        color: '#222222', // Fallback - dynamic theming applied in component
         fontWeight: '500',
         flex: 1,
     },

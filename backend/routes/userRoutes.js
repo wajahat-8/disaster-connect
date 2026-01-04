@@ -22,8 +22,8 @@ router.route('/profile')
   .put(updateProfile)
   .delete(deleteAccount);
 
-// Role management
-router.put('/role', changeRole);
+// Role management (Admin only)
+router.put('/role', authorize('admin'), changeRole);
 
 // Volunteer availability (volunteers only)
 router.put('/availability', authorize('volunteer'), updateAvailability);

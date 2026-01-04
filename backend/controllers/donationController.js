@@ -10,14 +10,14 @@ exports.createDonation = async (req, res, next) => {
         if (type === 'money' && (!amount || amount <= 0)) {
             return res.status(400).json({
                 success: false,
-                error: 'Please provide a valid amount for monetary donation'
+                message: 'Please provide a valid amount for monetary donation'
             });
         }
 
         if (type === 'supplies' && !itemDescription) {
             return res.status(400).json({
                 success: false,
-                error: 'Please provide a description for the supplies'
+                message: 'Please provide a description for the supplies'
             });
         }
 
@@ -46,7 +46,7 @@ exports.createDonation = async (req, res, next) => {
         });
     } catch (err) {
         console.error('Error creating donation:', err);
-        res.status(500).json({ success: false, error: 'Server Error' });
+        res.status(500).json({ success: false, message: 'Server Error' });
     }
 };
 
@@ -66,7 +66,7 @@ exports.getDonations = async (req, res, next) => {
         });
     } catch (err) {
         console.error('Error fetching donations:', err);
-        res.status(500).json({ success: false, error: 'Server Error' });
+        res.status(500).json({ success: false, message: 'Server Error' });
     }
 };
 
@@ -85,7 +85,7 @@ exports.getUserDonations = async (req, res, next) => {
         });
     } catch (err) {
         console.error('Error fetching user donations:', err);
-        res.status(500).json({ success: false, error: 'Server Error' });
+        res.status(500).json({ success: false, message: 'Server Error' });
     }
 };
 
@@ -112,6 +112,6 @@ exports.getDonationSummary = async (req, res, next) => {
         });
     } catch (err) {
         console.error('Error fetching donation summary:', err);
-        res.status(500).json({ success: false, error: 'Server Error' });
+        res.status(500).json({ success: false, message: 'Server Error' });
     }
 };

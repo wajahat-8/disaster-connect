@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, ScrollView, TouchableOpacity, Dimensions, SafeAreaView } from 'react-native';
 import { Text, Avatar, useTheme, Chip, Badge } from 'react-native-paper';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useAuth } from '../../auth';
 import { useFocusEffect } from '@react-navigation/native';
+import * as Location from 'expo-location';
 import AppCard from '../../components/common/AppCard';
 import { getAllItems } from '../../api/lostFoundApi';
+import { getNearbyDisasters } from '../../api/disasterApi';
 import apiClient from '../../api/apiClient';
 
 const HomeScreen = ({ navigation }) => {
@@ -13,6 +15,7 @@ const HomeScreen = ({ navigation }) => {
   const theme = useTheme();
   const [unreadCount, setUnreadCount] = useState(0);
   const [recentItems, setRecentItems] = useState([]);
+  const [nearbyDisasters, setNearbyDisasters] = useState([]);
   const [dimensions, setDimensions] = useState(Dimensions.get('window'));
 
   // Listen for dimension changes (orientation, window resize)
@@ -28,6 +31,7 @@ const HomeScreen = ({ navigation }) => {
     React.useCallback(() => {
       loadUnreadCount();
       loadRecentItems();
+      loadNearbyDisasters();
     }, [])
   );
 
@@ -44,7 +48,6 @@ const HomeScreen = ({ navigation }) => {
 
   const loadRecentItems = async () => {
     try {
-      // Fetch latest 5 items
       const data = await getAllItems({ limit: 5 });
       if (data.success) {
         setRecentItems(data.data.slice(0, 5));
@@ -52,6 +55,56 @@ const HomeScreen = ({ navigation }) => {
     } catch (error) {
       console.error('Error loading recent items:', error);
     }
+  };
+
+  const loadNearbyDisasters = async () => {
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        console.log('Location permission denied');
+        return;
+      }
+
+      const location = await Location.getCurrentPositionAsync({});
+      const { latitude, longitude } = location.coords;
+
+      const data = await getNearbyDisasters(latitude, longitude, 50);
+      if (data.success) {
+        setNearbyDisasters(data.disasters || []);
+      }
+    } catch (error) {
+      console.error('Error loading nearby disasters:', error);
+    }
+  };
+
+  const getDisasterIcon = (type) => {
+    const icons = {
+      flood: { name: 'water', color: '#2196F3' },
+      earthquake: { name: 'earth', color: '#795548' },
+      fire: { name: 'fire', color: '#FF5722' },
+      storm: { name: 'weather-lightning', color: '#9C27B0' },
+      landslide: { name: 'terrain', color: '#8D6E63' },
+      other: { name: 'alert-circle', color: '#FF9800' }
+    };
+    return icons[type?.toLowerCase()] || icons.other;
+  };
+
+  const getSeverityColor = (severity) => {
+    const colors = {
+      low: '#4CAF50',
+      medium: '#FF9800',
+      high: '#f44336',
+      critical: '#9C27B0'
+    };
+    return colors[severity?.toLowerCase()] || colors.medium;
+  };
+
+  const getTimeAgo = (date) => {
+    const seconds = Math.floor((new Date() - new Date(date)) / 1000);
+    if (seconds < 60) return 'Just now';
+    if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
+    if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
+    return `${Math.floor(seconds / 86400)}d ago`;
   };
 
   const menuItems = [
@@ -92,16 +145,6 @@ const HomeScreen = ({ navigation }) => {
     }
   ];
 
-  // Calculate number of columns based on screen width
-  const getColumnCount = () => {
-    if (dimensions.width >= 768) return 3; // Tablet
-    if (dimensions.width >= 600) return 3; // Large phone landscape
-    return 2; // Phone portrait
-  };
-
-  const columnCount = getColumnCount();
-  const cardWidth = `${(100 / columnCount) - 4}%`; // Subtract 4% for margins
-
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
       <ScrollView style={{ flex: 1 }}>
@@ -109,7 +152,7 @@ const HomeScreen = ({ navigation }) => {
         <View style={styles.header}>
           <View>
             <Text variant="titleLarge" style={styles.greeting}>Hello, {user?.name}</Text>
-            <Text variant="bodyMedium" style={{ color: 'gray' }}>Stay safe and connected.</Text>
+            <Text variant="bodyMedium" style={{ color: theme.colors.textSecondary || '#757575' }}>Stay safe and connected.</Text>
           </View>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 15 }}>
             {/* Notification Bell */}
@@ -124,7 +167,7 @@ const HomeScreen = ({ navigation }) => {
                     position: 'absolute',
                     top: -4,
                     right: -6,
-                    backgroundColor: '#FF5252'
+                    backgroundColor: theme.colors.error
                   }}
                   size={18}
                 >
@@ -145,11 +188,59 @@ const HomeScreen = ({ navigation }) => {
           </View>
         </View>
 
-
+        {/* Nearby Disasters Alert Section */}
+        {nearbyDisasters.length > 0 && (
+          <View style={styles.alertSection}>
+            <View style={styles.alertHeader}>
+              <View style={styles.alertTitleRow}>
+                <Ionicons name="warning" size={22} color={theme.colors.error} />
+                <Text variant="titleMedium" style={[styles.alertTitle, { color: theme.colors.error }]}>
+                  Nearby Alerts ({nearbyDisasters.length})
+                </Text>
+              </View>
+              <TouchableOpacity onPress={() => navigation.navigate('ViewMap')}>
+                <Text variant="bodySmall" style={{ color: theme.colors.primary }}>View Map</Text>
+              </TouchableOpacity>
+            </View>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingRight: 20 }}>
+              {nearbyDisasters.map((disaster) => {
+                const iconData = getDisasterIcon(disaster.disasterType);
+                return (
+                  <TouchableOpacity
+                    key={disaster._id}
+                    onPress={() => navigation.navigate('ViewMap', { focusDisaster: disaster })}
+                    activeOpacity={0.8}
+                  >
+                    <View style={[styles.disasterCard, { backgroundColor: theme.colors.errorContainer }]}>
+                      <View style={styles.disasterCardHeader}>
+                        <View style={[styles.disasterIconContainer, { backgroundColor: iconData.color + '20' }]}>
+                          <MaterialCommunityIcons name={iconData.name} size={24} color={iconData.color} />
+                        </View>
+                        <View style={[styles.severityBadge, { backgroundColor: getSeverityColor(disaster.severity) + '30' }]}>
+                          <Text style={[styles.severityText, { color: getSeverityColor(disaster.severity) }]}>
+                            {disaster.severity?.toUpperCase() || 'ALERT'}
+                          </Text>
+                        </View>
+                      </View>
+                      <Text variant="titleSmall" numberOfLines={1} style={styles.disasterType}>
+                        {disaster.disasterType || 'Disaster'}
+                      </Text>
+                      <Text variant="bodySmall" numberOfLines={2} style={styles.disasterLocation}>
+                        {disaster.location?.address || 'Location unavailable'}
+                      </Text>
+                      <Text variant="labelSmall" style={styles.disasterTime}>
+                        {getTimeAgo(disaster.createdAt)}
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          </View>
+        )}
 
         {/* Menu Grid */}
         <View style={styles.gridContainer}>
-          {console.log('Rendering menu items:', menuItems.length)}
           {menuItems.map((item, index) => (
             <AppCard
               key={index}
@@ -211,8 +302,6 @@ const HomeScreen = ({ navigation }) => {
           </View>
         )}
 
-
-
       </ScrollView>
     </SafeAreaView>
   );
@@ -231,6 +320,64 @@ const styles = StyleSheet.create({
   },
   greeting: {
     fontWeight: 'bold',
+  },
+  alertSection: {
+    paddingHorizontal: 20,
+    marginBottom: 20,
+  },
+  alertHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  alertTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  alertTitle: {
+    fontWeight: 'bold',
+  },
+  disasterCard: {
+    width: 180,
+    padding: 14,
+    borderRadius: 12,
+    marginRight: 12,
+  },
+  disasterCardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  disasterIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  severityBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 10,
+  },
+  severityText: {
+    fontSize: 10,
+    fontWeight: 'bold',
+  },
+  disasterType: {
+    fontWeight: 'bold',
+    textTransform: 'capitalize',
+    marginBottom: 4,
+  },
+  disasterLocation: {
+    color: '#666',
+    marginBottom: 6,
+  },
+  disasterTime: {
+    color: '#999',
   },
   gridContainer: {
     flexDirection: 'row',

@@ -27,9 +27,10 @@ export const AuthProvider = ({ children }) => {
                 const res = await authService.getMe();
                 if (res.success && res.user) {
                     setUser(res.user);
-                } else if (res.error) {
-                    // If unauthorized, clear state
-                    // await logout(); // Optional based on strictness
+                    await storageService.setUser(res.user);
+                } else {
+                    // If unauthorized or error, clear state to prevent stale session
+                    await logout();
                 }
             }
         } catch (e) {
@@ -97,13 +98,10 @@ export const AuthProvider = ({ children }) => {
             loading,
             login,
             register,
-            logout,
-            logout,
             updateUser,
             updateProfile,
             isAdmin: user?.role === 'admin',
-        }}>
-            {children}
+        }}>            {children}
         </AuthContext.Provider>
     );
 };

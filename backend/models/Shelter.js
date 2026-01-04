@@ -16,8 +16,7 @@ const shelterSchema = new mongoose.Schema({
         },
         coordinates: {
             type: [Number],
-            required: true,
-            index: '2dsphere'
+            required: true
         },
         formattedAddress: String,
         street: String,
@@ -52,6 +51,6 @@ const shelterSchema = new mongoose.Schema({
     }
 });
 
-// Geocoder middleware could be added here if needed, but we'll accept coordinates from frontend for now.
+shelterSchema.index({ location: '2dsphere' });
 
 module.exports = mongoose.model('Shelter', shelterSchema);

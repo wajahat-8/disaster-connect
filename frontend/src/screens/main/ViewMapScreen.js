@@ -4,7 +4,7 @@ import MapView, { Marker } from 'react-native-maps';
 import { useTheme, FAB } from 'react-native-paper';
 import { useFocusEffect } from '@react-navigation/native';
 import * as Location from 'expo-location';
-import api from '../../api/apiClient';
+import apiClient from '../../api/apiClient';
 import AppLoader from '../../components/common/AppLoader';
 import LocationPermissionPrompt from '../../components/common/LocationPermissionPrompt';
 import { DisasterMarker, DisasterDetailModal } from './components';
@@ -64,7 +64,7 @@ export default function ViewMapScreen({ navigation }) {
 
   const fetchDisasters = async (lat, lng) => {
     try {
-      const response = await api.get('/disasters/nearby', { params: { lat, lng, radius: 10000 } });
+      const response = await apiClient.get('/disasters/nearby', { params: { lat, lng, radius: 10000 } });
       if (response.data.success) {
         setDisasters(response.data.disasters);
       }

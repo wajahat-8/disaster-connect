@@ -2,6 +2,7 @@ import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
+import { useTheme } from 'react-native-paper';
 import { useAuth } from '../auth';
 import HomeScreen from '../screens/main/HomeScreen';
 import ProfileScreen from '../screens/main/ProfileScreen';
@@ -70,6 +71,7 @@ function LostFoundStackNavigator() {
 }
 
 export default function MainNavigator() {
+  const theme = useTheme();
   const { isAdmin } = useAuth();
 
   return (
@@ -94,8 +96,8 @@ export default function MainNavigator() {
 
           return <Ionicons name={iconName} size={size} color={color} />;
         },
-        tabBarActiveTintColor: '#007AFF',
-        tabBarInactiveTintColor: 'gray',
+        tabBarActiveTintColor: theme.colors.primary,
+        tabBarInactiveTintColor: theme.colors.textSecondary || 'gray',
       })}
     >
       <Tab.Screen name="Home" component={HomeStackNavigator} options={{ headerShown: false }} />

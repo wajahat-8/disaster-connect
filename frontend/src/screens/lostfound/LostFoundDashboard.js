@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { View, StyleSheet, FlatList, RefreshControl, Image, Alert } from 'react-native';
+import { View, StyleSheet, FlatList, RefreshControl, Image, Alert, SafeAreaView } from 'react-native';
 import { Text, FAB, Searchbar, SegmentedButtons, Avatar, useTheme, Chip, IconButton } from 'react-native-paper';
 import { useFocusEffect } from '@react-navigation/native';
 import { getAllItems, deleteItem } from '../../api/lostFoundApi';
@@ -81,12 +81,12 @@ export default function LostFoundDashboard({ navigation }) {
     };
 
     const renderItem = ({ item }) => (
-        <AppCard style={styles.card} onPress={() => { /* Navigate to detail if needed */ }}>
+        <AppCard style={[styles.card, { backgroundColor: theme.colors.surface }]} onPress={() => { /* Navigate to detail if needed */ }}>
             <View style={styles.cardHeader}>
                 <View style={styles.userInfo}>
                     <Avatar.Icon size={32} icon="account" style={{ backgroundColor: theme.colors.primaryContainer }} color={theme.colors.onPrimaryContainer} />
                     <View style={{ marginLeft: 8 }}>
-                        <Text variant="labelLarge">{item.reporterId?.name || 'Unknown'}</Text>
+                        <Text variant="labelLarge" style={{ color: theme.colors.onSurface }}>{item.reporterId?.name || 'Unknown'}</Text>
                         <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>
                             {new Date(item.date).toLocaleDateString()}
                         </Text>
@@ -112,8 +112,8 @@ export default function LostFoundDashboard({ navigation }) {
                 </View>
             </View>
 
-            <Text variant="titleMedium" style={styles.title}>{item.itemName}</Text>
-            <Text variant="bodyMedium" numberOfLines={2} style={styles.description}>
+            <Text variant="titleMedium" style={[styles.title, { color: theme.colors.onSurface }]}>{item.itemName}</Text>
+            <Text variant="bodyMedium" numberOfLines={2} style={[styles.description, { color: theme.colors.onSurfaceVariant }]}>
                 {item.description}
             </Text>
 
@@ -131,14 +131,18 @@ export default function LostFoundDashboard({ navigation }) {
     );
 
     return (
-        <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
-            <View style={styles.header}>
+        <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
+            <View style={[styles.header, { backgroundColor: theme.colors.surface, borderBottomColor: theme.colors.outlineVariant, borderBottomWidth: 1 }]}>
                 <Searchbar
                     placeholder="Search lost or found items..."
                     onChangeText={setSearchQuery}
                     value={searchQuery}
                     onSubmitEditing={handleSearch}
-                    style={styles.searchBar}
+                    style={[styles.searchBar, { backgroundColor: theme.colors.surfaceVariant }]}
+                    inputStyle={{ color: theme.colors.onSurfaceVariant }}
+                    iconColor={theme.colors.onSurfaceVariant}
+                    placeholderTextColor={theme.colors.onSurfaceVariant}
+                    elevation={0}
                 />
                 <SegmentedButtons
                     value={viewMode}
@@ -149,6 +153,7 @@ export default function LostFoundDashboard({ navigation }) {
                         { value: 'found', label: 'Found' },
                     ]}
                     style={styles.segments}
+                    theme={theme}
                 />
             </View>
 
@@ -161,7 +166,7 @@ export default function LostFoundDashboard({ navigation }) {
                     keyExtractor={item => item._id}
                     contentContainerStyle={styles.listContent}
                     refreshControl={
-                        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+                        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[theme.colors.primary]} />
                     }
                     ListEmptyComponent={
                         <View style={styles.emptyContainer}>
@@ -187,7 +192,7 @@ export default function LostFoundDashboard({ navigation }) {
                     onPress={() => navigation.navigate('ReportLostItem')}
                 />
             </View>
-        </View>
+        </SafeAreaView>
     );
 }
 
@@ -197,12 +202,10 @@ const styles = StyleSheet.create({
     },
     header: {
         padding: 16,
-        backgroundColor: 'white',
-        elevation: 2,
+        elevation: 0, // Handled by border
     },
     searchBar: {
         marginBottom: 12,
-        backgroundColor: '#f5f5f5',
     },
     segments: {
         marginBottom: 0,
@@ -213,7 +216,6 @@ const styles = StyleSheet.create({
     },
     card: {
         marginBottom: 16,
-        backgroundColor: 'white',
     },
     cardHeader: {
         flexDirection: 'row',

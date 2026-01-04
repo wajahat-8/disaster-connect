@@ -1,6 +1,7 @@
 import axios from 'axios';
 import { storageService } from './storage.service';
 import { API_BASE_URL } from '../config';
+import { errorHelper } from './error.helper';
 
 const apiClient = axios.create({
     baseURL: API_BASE_URL || 'http://localhost:5000/api',
@@ -25,7 +26,12 @@ apiClient.interceptors.response.use(
     (error) => {
         // Log errors centrally if needed
         if (error.response) {
-            console.error('API Error:', error.response.status, error.response.data);
+            const message = errorHelper(error);
+            if (error.response.status >= 500) {
+                console.error('API Error:', error.response.status, message);
+            } else {
+                console.log('API Error:', error.response.status, message);
+            }
         }
         return Promise.reject(error);
     }

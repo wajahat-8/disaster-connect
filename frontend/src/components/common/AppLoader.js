@@ -16,10 +16,10 @@ export default function AppLoader({
         return (
             <Modal transparent animationType="fade" visible={visible}>
                 <View style={styles.overlayContainer}>
-                    <View style={styles.surface}>
+                    <View style={[styles.surface, { backgroundColor: 'rgba(255,255,255,0.9)' }]}>
                         <ActivityIndicator size="large" color={theme.colors.primary} />
                         {message && (
-                            <Text variant="bodyMedium" style={[styles.message, { color: 'white' }]}>
+                            <Text variant="bodyMedium" style={[styles.message, { color: theme.colors.primary }]}>
                                 {message}
                             </Text>
                         )}

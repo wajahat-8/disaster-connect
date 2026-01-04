@@ -11,7 +11,7 @@ exports.reportLostItem = async (req, res, next) => {
         if (!location || !location.coordinates || location.coordinates.length !== 2) {
             return res.status(400).json({
                 success: false,
-                error: 'Invalid or missing location data'
+                message: 'Invalid or missing location data'
             });
         }
 
@@ -46,7 +46,7 @@ exports.reportLostItem = async (req, res, next) => {
         });
     } catch (err) {
         console.error('Error in reportLostItem:', err);
-        res.status(500).json({ success: false, error: 'Server Error', details: err.message });
+        res.status(500).json({ success: false, message: 'Server Error', details: err.message });
     }
 };
 
@@ -61,7 +61,7 @@ exports.reportFoundItem = async (req, res, next) => {
         if (!location || !location.coordinates || location.coordinates.length !== 2) {
             return res.status(400).json({
                 success: false,
-                error: 'Invalid or missing location data'
+                message: 'Invalid or missing location data'
             });
         }
 
@@ -96,7 +96,7 @@ exports.reportFoundItem = async (req, res, next) => {
         });
     } catch (err) {
         console.error('Error in reportFoundItem:', err);
-        res.status(500).json({ success: false, error: 'Server Error', details: err.message });
+        res.status(500).json({ success: false, message: 'Server Error', details: err.message });
     }
 };
 
@@ -128,7 +128,7 @@ exports.getAllItems = async (req, res, next) => {
         });
     } catch (err) {
         console.error(err);
-        res.status(500).json({ success: false, error: 'Server Error' });
+        res.status(500).json({ success: false, message: 'Server Error' });
     }
 };
 
@@ -155,7 +155,7 @@ exports.getMatches = async (req, res, next) => {
         });
     } catch (err) {
         console.error(err);
-        res.status(500).json({ success: false, error: 'Server Error' });
+        res.status(500).json({ success: false, message: 'Server Error' });
     }
 };
 
@@ -169,7 +169,7 @@ exports.deleteItem = async (req, res, next) => {
         if (!item) {
             return res.status(404).json({
                 success: false,
-                error: 'Item not found'
+                message: 'Item not found'
             });
         }
 
@@ -177,7 +177,7 @@ exports.deleteItem = async (req, res, next) => {
         if (item.reporterId.toString() !== req.user.id) {
             return res.status(403).json({
                 success: false,
-                error: 'Not authorized to delete this item'
+                message: 'Not authorized to delete this item'
             });
         }
 
@@ -189,7 +189,7 @@ exports.deleteItem = async (req, res, next) => {
         });
     } catch (err) {
         console.error('Error in deleteItem:', err);
-        res.status(500).json({ success: false, error: 'Server Error', details: err.message });
+        res.status(500).json({ success: false, message: 'Server Error', details: err.message });
     }
 };
 
@@ -203,7 +203,7 @@ exports.adminDeleteItem = async (req, res, next) => {
         if (!item) {
             return res.status(404).json({
                 success: false,
-                error: 'Item not found'
+                message: 'Item not found'
             });
         }
 
@@ -215,6 +215,6 @@ exports.adminDeleteItem = async (req, res, next) => {
         });
     } catch (err) {
         console.error('Error in adminDeleteItem:', err);
-        res.status(500).json({ success: false, error: 'Server Error', details: err.message });
+        res.status(500).json({ success: false, message: 'Server Error', details: err.message });
     }
 };

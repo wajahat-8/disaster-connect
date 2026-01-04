@@ -20,8 +20,7 @@ const lostFoundSchema = new mongoose.Schema({
             default: 'Point'
         },
         coordinates: {
-            type: [Number],
-            index: '2dsphere'
+            type: [Number]
         },
         address: String
     },
@@ -44,5 +43,7 @@ const lostFoundSchema = new mongoose.Schema({
         default: Date.now
     }
 });
+
+lostFoundSchema.index({ location: '2dsphere' });
 
 module.exports = mongoose.model('LostFound', lostFoundSchema);

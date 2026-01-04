@@ -3,7 +3,7 @@ import { View, StyleSheet, ScrollView, Alert } from 'react-native';
 import { useTheme, HelperText } from 'react-native-paper';
 import * as Location from 'expo-location';
 import { useAuth } from '../../auth';
-import api from '../../api/apiClient';
+import apiClient from '../../api/apiClient';
 import AppInput from '../../components/common/AppInput';
 import AppButton from '../../components/common/AppButton';
 import AppCard from '../../components/common/AppCard';
@@ -86,7 +86,7 @@ export default function ReportDisasterScreen({ navigation }) {
         });
       }
 
-      const response = await api.post('/disasters', formData, {
+      const response = await apiClient.post('/disasters', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
 

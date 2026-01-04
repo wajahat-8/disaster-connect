@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, StyleSheet, ScrollView } from 'react-native';
+import { View, StyleSheet, ScrollView, SafeAreaView } from 'react-native';
 import { Avatar, Text, useTheme, Divider } from 'react-native-paper';
 import { useAuth } from '../../auth';
 import AppCard from '../../components/common/AppCard';
@@ -10,65 +10,67 @@ export default function ProfileScreen({ navigation }) {
   const theme = useTheme();
 
   return (
-    <ScrollView contentContainerStyle={[styles.container, { backgroundColor: theme.colors.background }]}>
-      <AppCard style={styles.card}>
-        <View style={styles.header}>
-          <Avatar.Text
-            size={80}
-            label={(user?.name || 'U').split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase()}
-            style={{ backgroundColor: theme.colors.primaryContainer, marginBottom: 15 }}
-            color={theme.colors.onPrimaryContainer}
-          />
-          <Text variant="headlineSmall" style={styles.name}>{user?.name || 'Unnamed User'}</Text>
-          <View style={[styles.roleBadge, { backgroundColor: theme.colors.secondaryContainer }]}>
-            <Text variant="labelMedium" style={{ color: theme.colors.onSecondaryContainer }}>
-              {(user?.role || 'user').toUpperCase()}
-            </Text>
+    <SafeAreaView style={{ flex: 1, backgroundColor: theme.colors.background }}>
+      <ScrollView contentContainerStyle={styles.container}>
+        <AppCard style={styles.card}>
+          <View style={styles.header}>
+            <Avatar.Text
+              size={80}
+              label={(user?.name || 'U').split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase()}
+              style={{ backgroundColor: theme.colors.primaryContainer, marginBottom: 15 }}
+              color={theme.colors.onPrimaryContainer}
+            />
+            <Text variant="headlineSmall" style={styles.name}>{user?.name || 'Unnamed User'}</Text>
+            <View style={[styles.roleBadge, { backgroundColor: theme.colors.secondaryContainer }]}>
+              <Text variant="labelMedium" style={{ color: theme.colors.onSecondaryContainer }}>
+                {(user?.role || 'user').toUpperCase()}
+              </Text>
+            </View>
           </View>
-        </View>
-      </AppCard>
+        </AppCard>
 
-      <AppCard style={styles.card}>
-        <Text variant="titleMedium" style={{ color: theme.colors.primary, marginBottom: 15 }}>Contact Information</Text>
+        <AppCard style={styles.card}>
+          <Text variant="titleMedium" style={{ color: theme.colors.primary, marginBottom: 15 }}>Contact Information</Text>
 
-        <View style={styles.row}>
-          <Text variant="bodyMedium" style={styles.label}>Email</Text>
-          <Text variant="bodyLarge">{user?.email || '—'}</Text>
-        </View>
-        <Divider style={styles.divider} />
-
-        <View style={styles.row}>
-          <Text variant="bodyMedium" style={styles.label}>Phone</Text>
-          <Text variant="bodyLarge">{user?.phone || '—'}</Text>
-        </View>
-        <Divider style={styles.divider} />
-
-        {user?.location && (
           <View style={styles.row}>
-            <Text variant="bodyMedium" style={styles.label}>Location</Text>
-            <Text variant="bodyLarge">{typeof user.location === 'string' ? user.location : (user.location.address || '—')}</Text>
+            <Text variant="bodyMedium" style={styles.label}>Email</Text>
+            <Text variant="bodyLarge">{user?.email || '—'}</Text>
           </View>
-        )}
-      </AppCard>
+          <Divider style={styles.divider} />
 
-      <View style={styles.actions}>
-        <AppButton
-          mode="contained"
-          text="Edit Profile"
-          onPress={() => navigation.navigate('EditProfile')}
-          icon="account-edit"
-        />
+          <View style={styles.row}>
+            <Text variant="bodyMedium" style={styles.label}>Phone</Text>
+            <Text variant="bodyLarge">{user?.phone || '—'}</Text>
+          </View>
+          <Divider style={styles.divider} />
 
-        <AppButton
-          mode="outlined"
-          text="Logout"
-          onPress={logout}
-          icon="logout"
-          style={{ borderColor: theme.colors.error, marginTop: 10 }}
-          labelStyle={{ color: theme.colors.error }}
-        />
-      </View>
-    </ScrollView>
+          {user?.location && (
+            <View style={styles.row}>
+              <Text variant="bodyMedium" style={styles.label}>Location</Text>
+              <Text variant="bodyLarge">{typeof user.location === 'string' ? user.location : (user.location.address || '—')}</Text>
+            </View>
+          )}
+        </AppCard>
+
+        <View style={styles.actions}>
+          <AppButton
+            mode="contained"
+            text="Edit Profile"
+            onPress={() => navigation.navigate('EditProfile')}
+            icon="account-edit"
+          />
+
+          <AppButton
+            mode="outlined"
+            text="Logout"
+            onPress={logout}
+            icon="logout"
+            style={{ borderColor: theme.colors.error, marginTop: 10 }}
+            labelStyle={{ color: theme.colors.error }}
+          />
+        </View>
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 

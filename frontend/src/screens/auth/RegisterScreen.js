@@ -121,7 +121,7 @@ const styles = StyleSheet.create({
   subtitle: {
     textAlign: 'center',
     marginBottom: 30,
-    color: 'gray',
+    color: '#757575', // textSecondary fallback
   },
   button: {
     marginTop: 10,

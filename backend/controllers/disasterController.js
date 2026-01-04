@@ -1,5 +1,7 @@
 const DisasterReport = require('../models/DisasterReport');
 const User = require('../models/User');
+const UserNotification = require('../models/UserNotification');
+const { sendMulticastNotification } = require('../services/expoPushService');
 
 // @desc    Create new disaster report
 // @route   POST /api/disasters
@@ -60,6 +62,31 @@ exports.createDisaster = async (req, res) => {
       message: 'Disaster report created successfully',
       disaster
     });
+
+    // Notify all active users (Background task)
+    // In a real app, this should be scoped to a location or use a messaging queue
+    try {
+      const users = await User.find({ isActive: true, fcmToken: { $exists: true, $ne: '' } }).select('fcmToken _id');
+      if (users.length > 0) {
+        const tokens = users.map(u => u.fcmToken);
+        const title = `🚨 New ${type.toUpperCase()} Reported!`;
+        const body = `${description.substring(0, 100)}...${address ? ` at ${address}` : ''}`;
+
+        // Save to DB notifications
+        await UserNotification.insertMany(users.map(u => ({
+          userId: u._id,
+          title,
+          body,
+          type: 'disaster',
+          data: { disasterId: disaster._id }
+        })));
+
+        // Send push
+        await sendMulticastNotification(tokens, { title, body }, { disasterId: disaster._id.toString(), type: 'disaster' });
+      }
+    } catch (pushError) {
+      console.error('Failed to send disaster alerts:', pushError);
+    }
   } catch (error) {
     console.error('Create disaster error:', error);
     res.status(500).json({
