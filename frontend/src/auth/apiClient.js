@@ -28,7 +28,7 @@ apiClient.interceptors.response.use(
         if (error.response) {
             const message = errorHelper(error);
             if (error.response.status >= 500) {
-                console.error('API Error:', error.response.status, message);
+                console.log('API Error (suppressed):', error.response.status, message);
             } else {
                 console.log('API Error:', error.response.status, message);
             }

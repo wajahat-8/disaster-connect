@@ -24,7 +24,7 @@ const getHostIP = () => {
   // Fallback: If auto-detection fails, use a default
   // You can manually override this in rare cases
   console.warn('Could not auto-detect host IP, using fallback');
-  return '192.168.0.106'; // Fallback IP
+  return '192.168.10.6'; // Fallback IP updated to match server logs
 };
 
 const HOST_IP = getHostIP();

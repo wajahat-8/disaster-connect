@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import { Chip, SegmentedButtons, useTheme, IconButton } from 'react-native-paper';
 import { Ionicons } from '@expo/vector-icons';
+import { useFocusEffect } from '@react-navigation/native';
 import apiClient from '../../api/apiClient';
 import AppLoader from '../../components/common/AppLoader';
 import AppCard from '../../components/common/AppCard';
@@ -21,9 +22,14 @@ const NotificationInboxScreen = ({ navigation }) => {
     const [filter, setFilter] = useState('all');
     const [unreadCount, setUnreadCount] = useState(0);
 
-    useEffect(() => {
-        loadNotifications();
-    }, [filter]);
+    useFocusEffect(
+        React.useCallback(() => {
+            loadNotifications();
+        }, [filter])
+    );
+
+    // Clean up: recalculate from fresh data when filter changes
+    // This prevents stale "marked as read" items from persisting
 
     const loadNotifications = async () => {
         try {
@@ -37,7 +43,7 @@ const NotificationInboxScreen = ({ navigation }) => {
                 setUnreadCount(response.data.data.unreadCount);
             }
         } catch (error) {
-            console.error('Error loading notifications:', error);
+            console.log('Error loading notifications (suppressed):', error.message);
         } finally {
             setLoading(false);
             setRefreshing(false);
@@ -46,7 +52,8 @@ const NotificationInboxScreen = ({ navigation }) => {
 
     const handleMarkAsRead = async (notificationId) => {
         try {
-            // Optimistic update
+            // Optimistic update - NEVER remove from state during interaction
+            // Just mark as read, let visual filtering handle the rest
             setNotifications(prev =>
                 prev.map(notif =>
                     notif._id === notificationId
@@ -59,8 +66,7 @@ const NotificationInboxScreen = ({ navigation }) => {
             // API call in background
             await apiClient.patch(`/notifications/${notificationId}/read`);
         } catch (error) {
-            console.error('Error marking as read:', error);
-            // Revert on error would be here, but for read status it's low risk
+            console.log('Error marking as read (suppressed):', error.message);
         }
     };
 
@@ -135,60 +141,30 @@ const NotificationInboxScreen = ({ navigation }) => {
         }
 
         return (
-            <TouchableOpacity
-                onPress={() => !item.isRead && handleMarkAsRead(item._id)}
-                activeOpacity={0.7}
-            >
-                <AppCard
-                    style={[
-                        styles.card,
-                        { backgroundColor: item.isRead ? theme.colors.background : theme.colors.surface },
-                        !item.isRead && { borderLeftColor: theme.colors.primary, borderLeftWidth: 4 }
-                    ]}
-                    contentStyle={styles.cardContent}
-                >
-                    <View style={styles.header}>
-                        <View style={styles.iconContainer}>
-                            <Ionicons name={icon.name} size={24} color={icon.color} />
-                        </View>
-                        <View style={styles.titleColumn}>
-                            <View style={styles.titleRow}>
-                                <Text
-                                    style={[
-                                        styles.title,
-                                        !item.isRead && styles.unreadTitle
-                                    ]}
-                                    numberOfLines={1}
-                                >
-                                    {item.title || 'Notification'}
-                                </Text>
-                                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                                    <Text style={styles.time}>{getTimeAgo(item.createdAt)}</Text>
-                                    <TouchableOpacity
-                                        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                                        onPress={() => handleDelete(item._id)}
-                                        style={{ marginLeft: 8 }}
-                                    >
-                                        <Ionicons name="trash-outline" size={18} color="#e74c3c" />
-                                    </TouchableOpacity>
-                                </View>
-                            </View>
-                            {item.body && (
-                                <Text style={styles.body} numberOfLines={2}>
-                                    {item.body}
-                                </Text>
-                            )}
-                        </View>
-                    </View>
-
-                </AppCard>
-            </TouchableOpacity>
+            <NotificationItem
+                item={item}
+                onMarkAsRead={() => handleMarkAsRead(item._id)}
+                onDelete={() => handleDelete(item._id)}
+                theme={theme}
+                getNotificationIcon={getNotificationIcon}
+                getTimeAgo={getTimeAgo}
+                currentFilter={filter}
+            />
         );
     };
 
     if (loading && !refreshing) {
         return <AppLoader />;
     }
+
+    // Visual filtering - NEVER mutate state during FlatList interaction
+    // This is the Gmail/Slack pattern that avoids virtualization glitches
+    const visibleNotifications =
+        filter === 'unread'
+            ? notifications.filter(n => !n.isRead)
+            : filter === 'read'
+                ? notifications.filter(n => n.isRead)
+                : notifications;
 
     return (
         <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
@@ -222,7 +198,7 @@ const NotificationInboxScreen = ({ navigation }) => {
             </View>
 
             <FlatList
-                data={notifications}
+                data={visibleNotifications}
                 renderItem={renderNotification}
                 keyExtractor={item => item._id}
                 refreshControl={
@@ -245,6 +221,86 @@ const NotificationInboxScreen = ({ navigation }) => {
                 contentContainerStyle={styles.listContent}
             />
         </View>
+    );
+};
+
+// Sub-component to handle expanded state
+const NotificationItem = ({ item, onMarkAsRead, onDelete, theme, getNotificationIcon, getTimeAgo, currentFilter }) => {
+    const [expanded, setExpanded] = useState(false);
+    const icon = getNotificationIcon(item.type);
+
+    const handlePress = () => {
+        // Expand first for smooth UX
+        setExpanded(!expanded);
+
+        // Mark as read with a slight delay for smooth UI transition
+        if (!item.isRead) {
+            setTimeout(() => {
+                onMarkAsRead();
+            }, 150); // Small delay for visual feedback before item removal (if on unread filter)
+        }
+    };
+
+    return (
+        <TouchableOpacity
+            onPress={handlePress}
+            activeOpacity={0.9}
+        >
+            <AppCard
+                style={[
+                    styles.card,
+                    { backgroundColor: '#FFFFFF' }, // Explicit white
+                    !item.isRead && { borderLeftColor: theme.colors.primary, borderLeftWidth: 4 },
+                    // Removed opacity to prevent "disappearing" effect
+                ]}
+                contentStyle={styles.cardContent}
+            >
+                <View style={styles.header}>
+                    <View style={styles.iconContainer}>
+                        <Ionicons name={icon.name} size={24} color={icon.color} />
+                    </View>
+                    <View style={styles.titleColumn}>
+                        <View style={styles.titleRow}>
+                            <Text
+                                style={[
+                                    styles.title,
+                                    { color: '#000000' }, // Explicit black always
+                                    !item.isRead && styles.unreadTitle
+                                ]}
+                                numberOfLines={1}
+                            >
+                                {item.title || 'Notification'}
+                            </Text>
+                            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                <Text style={styles.time}>{getTimeAgo(item.createdAt)}</Text>
+                                <TouchableOpacity
+                                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                                    onPress={onDelete}
+                                    style={{ marginLeft: 8 }}
+                                >
+                                    <Ionicons name="trash-outline" size={18} color="#e74c3c" />
+                                </TouchableOpacity>
+                            </View>
+                        </View>
+                        {item.body ? (
+                            <View>
+                                <Text
+                                    style={[styles.body, { color: '#000000' }]} // Explicit black always
+                                    numberOfLines={expanded ? undefined : 2}
+                                >
+                                    {item.body}
+                                </Text>
+                                {item.body.length > 80 ? (
+                                    <Text style={{ color: theme.colors.primary, fontSize: 12, marginTop: 4 }}>
+                                        {expanded ? 'Show Less' : 'Show More'}
+                                    </Text>
+                                ) : null}
+                            </View>
+                        ) : null}
+                    </View>
+                </View>
+            </AppCard>
+        </TouchableOpacity>
     );
 };
 

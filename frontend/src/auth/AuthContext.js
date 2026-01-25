@@ -28,6 +28,13 @@ export const AuthProvider = ({ children }) => {
                 if (res.success && res.user) {
                     setUser(res.user);
                     await storageService.setUser(res.user);
+
+                    // Initialize notifications on auto-login
+                    try {
+                        await initializeNotifications();
+                    } catch (error) {
+                        console.error('Error initializing notifications on auto-login:', error);
+                    }
                 } else {
                     // If unauthorized or error, clear state to prevent stale session
                     await logout();

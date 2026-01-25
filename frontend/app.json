@@ -55,9 +55,7 @@
       [
         "expo-build-properties",
         {
-          "android": {
-            "googleServicesFile": "./google-services.json"
-          }
+          "android": {}
         }
       ]
     ],

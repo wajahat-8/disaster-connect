@@ -40,7 +40,7 @@ exports.updateProfile = async (req, res) => {
       'location',
       'availability',
       'profileImage',
-      // 'role' - Removed to prevent privilege escalation
+      'role',
     ];
 
     const updates = {};
@@ -51,6 +51,22 @@ exports.updateProfile = async (req, res) => {
         updates[key] = req.body[key];
       }
     });
+
+    // Security check for role update
+    if (updates.role) {
+      if (!['user', 'volunteer'].includes(updates.role)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid role. Can only switch between user and volunteer.'
+        });
+      }
+      // If becoming volunteer, ensure availability defaults to true if not set
+      if (updates.role === 'volunteer' && updates.availability === undefined) {
+        // Check if availability is already set in DB later, or just default here?
+        // Simpler: let's not force it here, but ensure the user object has it if needed.
+        // Actually, let's leave it flexible.
+      }
+    }
 
     // Handle location update - can be string (address) or object (coordinates)
     if (updates.location !== undefined) {

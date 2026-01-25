@@ -56,7 +56,7 @@ export default function ViewMapScreen({ navigation }) {
       regionRef.current = newRegion;
       fetchDisasters(latitude, longitude);
     } catch (error) {
-      console.error('[ViewMapScreen] Location error:', error);
+      console.log('[ViewMapScreen] Location error (suppressed):', error.message);
       setLocationPermissionDenied(true);
       setLoading(false);
     }
@@ -69,7 +69,7 @@ export default function ViewMapScreen({ navigation }) {
         setDisasters(response.data.disasters);
       }
     } catch (error) {
-      console.error('[ViewMapScreen] Fetch disasters error:', error);
+      console.log('[ViewMapScreen] Fetch disasters error (suppressed):', error.message);
     } finally {
       setLoading(false);
     }

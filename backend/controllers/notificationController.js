@@ -68,10 +68,12 @@ exports.sendNotification = asyncHandler(async (req, res) => {
       isActive: true
     }).select('fcmToken _id');
   } else if (userRoles && userRoles.length > 0) {
+    console.log(`Sending notification to roles: ${userRoles.join(', ')}`);
     targetUsers = await User.find({
       role: { $in: userRoles },
       isActive: true
     }).select('fcmToken _id');
+    console.log(`Found ${targetUsers.length} target users for roles`);
   } else if (topic) {
     targetUsers = await User.find({ isActive: true }).select('fcmToken _id');
   } else {

@@ -85,7 +85,7 @@ const ManageSheltersScreen = ({ navigation }) => {
                         ]}
                         textStyle={{ color: 'white', fontSize: 11 }}
                     >
-                        {item.currentOccupancy}/{item.capacity}
+                        {`${item.currentOccupancy}/${item.capacity}`}
                     </Chip>
                 </View>
 
@@ -101,7 +101,7 @@ const ManageSheltersScreen = ({ navigation }) => {
                     ))}
                     {item.facilities?.length > 3 && (
                         <Chip style={styles.facilityChip} textStyle={{ fontSize: 11, lineHeight: 12, marginVertical: 0 }} compact>
-                            +{item.facilities.length - 3} more
+                            {`+${item.facilities.length - 3} more`}
                         </Chip>
                     )}
                 </View>
@@ -141,7 +141,7 @@ const ManageSheltersScreen = ({ navigation }) => {
 
     return (
         <View style={styles.container}>
-            <Text style={styles.title}>Manage Shelters</Text>
+            <Text style={styles.screenTitle}>Manage Shelters</Text>
 
             {loading ? (
                 <AppLoader />
@@ -173,13 +173,13 @@ const styles = StyleSheet.create({
         flex: 1,
         backgroundColor: '#f5f6fa',
     },
-    title: {
+    screenTitle: {
         fontSize: 24,
         fontWeight: 'bold',
         textAlign: 'center',
         marginVertical: 15,
         color: '#2c3e50',
-    },
+    }, // Renamed from title to avoid duplicate
     listContent: {
         padding: 10,
     },

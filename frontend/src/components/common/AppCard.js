@@ -23,7 +23,7 @@ export default function AppCard({
             mode={mode}
             {...props}
         >
-            {(title || subtitle) && (
+            {(title || subtitle) ? (
                 <Card.Title
                     title={title}
                     subtitle={subtitle}
@@ -31,7 +31,7 @@ export default function AppCard({
                     right={right}
                     titleStyle={styles.title}
                 />
-            )}
+            ) : null}
             <Card.Content style={contentStyle}>
                 {children}
             </Card.Content>

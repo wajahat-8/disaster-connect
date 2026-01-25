@@ -32,6 +32,10 @@ const HomeScreen = ({ navigation }) => {
       loadUnreadCount();
       loadRecentItems();
       loadNearbyDisasters();
+
+      // Poll for unread count every 5 seconds for real-time updates
+      const intervalId = setInterval(loadUnreadCount, 5000);
+      return () => clearInterval(intervalId);
     }, [])
   );
 
@@ -42,7 +46,7 @@ const HomeScreen = ({ navigation }) => {
         setUnreadCount(response.data.data.unreadCount);
       }
     } catch (error) {
-      console.error('Error loading unread count:', error);
+      console.log('Error loading unread count (suppressed):', error.message);
     }
   };
 
@@ -53,7 +57,7 @@ const HomeScreen = ({ navigation }) => {
         setRecentItems(data.data.slice(0, 5));
       }
     } catch (error) {
-      console.error('Error loading recent items:', error);
+      console.log('Error loading recent items (suppressed):', error.message);
     }
   };
 
@@ -73,7 +77,8 @@ const HomeScreen = ({ navigation }) => {
         setNearbyDisasters(data.disasters || []);
       }
     } catch (error) {
-      console.error('Error loading nearby disasters:', error);
+      // User requested to suppress this error from screen
+      console.log('Error loading nearby disasters (suppressed):', error.message);
     }
   };
 
@@ -195,7 +200,7 @@ const HomeScreen = ({ navigation }) => {
               <View style={styles.alertTitleRow}>
                 <Ionicons name="warning" size={22} color={theme.colors.error} />
                 <Text variant="titleMedium" style={[styles.alertTitle, { color: theme.colors.error }]}>
-                  Nearby Alerts ({nearbyDisasters.length})
+                  Nearby Alerts-50km ({nearbyDisasters.length})
                 </Text>
               </View>
               <TouchableOpacity onPress={() => navigation.navigate('ViewMap')}>

@@ -58,7 +58,7 @@ const DisasterDetailModal = ({ visible, disaster, onClose }) => {
                                 icon="alert-circle-outline"
                                 style={{ backgroundColor: markerColor + '40' }}
                             >
-                                Severity: {disaster.severity}
+                                {`Severity: ${disaster.severity}`}
                             </Chip>
                             {disaster.verified && (
                                 <Chip

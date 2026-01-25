@@ -48,8 +48,9 @@ const AdminNotificationScreen = ({ navigation }) => {
                 ]);
             }
         } catch (error) {
-            console.error(error);
-            Alert.alert('Error', error.response?.data?.message || 'Failed to send notification');
+            console.log('Send notification error (suppressed):', error.message);
+            console.log('Send notification error (suppressed):', error.message);
+            // Alert.alert('Error', ...); // Suppressed per user request
         } finally {
             setLoading(false);
         }
