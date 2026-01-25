@@ -84,13 +84,15 @@ const NotificationInboxScreen = ({ navigation }) => {
 
     const handleMarkAllAsRead = async () => {
         try {
+            // Mark all as read via API
             await apiClient.patch('/notifications/read-all');
-            setNotifications(prev =>
-                prev.map(notif => ({ ...notif, isRead: true, readAt: new Date() }))
-            );
-            setUnreadCount(0);
+
+            // Reload notifications from server to ensure data consistency
+            // This prevents any potential state corruption issues
+            await loadNotifications();
         } catch (error) {
             console.error('Error marking all as read:', error);
+            alert('Failed to mark all notifications as read');
         }
     };
 
@@ -126,6 +128,12 @@ const NotificationInboxScreen = ({ navigation }) => {
 
     const renderNotification = ({ item }) => {
         const icon = getNotificationIcon(item.type);
+
+        // Defensive checks to prevent blank notifications
+        if (!item.title && !item.body) {
+            return null;
+        }
+
         return (
             <TouchableOpacity
                 onPress={() => !item.isRead && handleMarkAsRead(item._id)}
@@ -152,7 +160,7 @@ const NotificationInboxScreen = ({ navigation }) => {
                                     ]}
                                     numberOfLines={1}
                                 >
-                                    {item.title}
+                                    {item.title || 'Notification'}
                                 </Text>
                                 <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                                     <Text style={styles.time}>{getTimeAgo(item.createdAt)}</Text>
@@ -165,9 +173,11 @@ const NotificationInboxScreen = ({ navigation }) => {
                                     </TouchableOpacity>
                                 </View>
                             </View>
-                            <Text style={styles.body} numberOfLines={2}>
-                                {item.body}
-                            </Text>
+                            {item.body && (
+                                <Text style={styles.body} numberOfLines={2}>
+                                    {item.body}
+                                </Text>
+                            )}
                         </View>
                     </View>
 
