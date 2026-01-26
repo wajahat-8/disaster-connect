@@ -6,6 +6,7 @@ import { getAllItems, deleteItem } from '../../api/lostFoundApi';
 import { useAuth } from '../../auth/useAuth';
 import AppLoader from '../../components/common/AppLoader';
 import AppCard from '../../components/common/AppCard';
+import { getImageUrl } from '../../utils/imageUtils';
 
 export default function LostFoundDashboard({ navigation }) {
     const theme = useTheme();
@@ -15,6 +16,7 @@ export default function LostFoundDashboard({ navigation }) {
     const [items, setItems] = useState([]);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
+
 
     const fetchItems = async () => {
         try {
@@ -124,9 +126,39 @@ export default function LostFoundDashboard({ navigation }) {
                 </View>
             )}
 
-            {item.image && item.image !== 'no-photo.jpg' && (
-                <Image source={{ uri: item.image }} style={styles.cardImage} resizeMode="cover" />
+            {/* Contact Info */}
+            {item.contactInfo && (item.contactInfo.phone || item.contactInfo.email) && (
+                <View style={{ marginTop: 8, padding: 8, backgroundColor: theme.colors.surfaceVariant, borderRadius: 8 }}>
+                    {item.contactInfo.phone && (
+                        <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
+                            <Avatar.Icon size={18} icon="phone" style={{ backgroundColor: 'transparent' }} color={theme.colors.primary} />
+                            <Text variant="bodySmall" style={{ color: theme.colors.onSurface, marginLeft: 4 }}>{item.contactInfo.phone}</Text>
+                        </View>
+                    )}
+                    {item.contactInfo.email && (
+                        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                            <Avatar.Icon size={18} icon="email" style={{ backgroundColor: 'transparent' }} color={theme.colors.primary} />
+                            <Text variant="bodySmall" style={{ color: theme.colors.onSurface, marginLeft: 4 }}>{item.contactInfo.email}</Text>
+                        </View>
+                    )}
+                </View>
             )}
+
+            {item.image && item.image !== 'no-photo.jpg' && (() => {
+                const imageUrl = getImageUrl(item.image);
+                return imageUrl ? (
+                    <Image
+                        source={{ uri: imageUrl }}
+                        style={styles.cardImage}
+                        resizeMode="cover"
+                        onError={(error) => {
+                            if (__DEV__) {
+                                console.error('Image load error:', error.nativeEvent.error, 'for URL:', imageUrl);
+                            }
+                        }}
+                    />
+                ) : null;
+            })()}
         </AppCard>
     );
 

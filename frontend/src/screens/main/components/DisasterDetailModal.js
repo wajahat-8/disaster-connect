@@ -1,8 +1,9 @@
 import React from 'react';
-import { View, Modal, ScrollView, StyleSheet } from 'react-native';
+import { View, Modal, ScrollView, StyleSheet, Image } from 'react-native';
 import { Text, useTheme, IconButton, Chip } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import AppButton from '../../../components/common/AppButton';
+import { getImageUrl } from '../../../utils/imageUtils';
 
 /**
  * Get color based on disaster severity.
@@ -76,6 +77,59 @@ const DisasterDetailModal = ({ visible, disaster, onClose }) => {
                             {disaster.description}
                         </Text>
 
+                        {/* Image */}
+                        {(() => {
+                            // Check if disaster has an image - handle various edge cases
+                            const imageValue = disaster.image;
+                            
+                            // Check if image exists and is valid
+                            const hasImage = imageValue && 
+                                           typeof imageValue === 'string' &&
+                                           imageValue.trim() !== '' && 
+                                           imageValue !== 'no-photo.jpg' &&
+                                           imageValue !== 'null' &&
+                                           imageValue !== 'undefined' &&
+                                           imageValue.toLowerCase() !== 'none';
+                            
+                            if (!hasImage) {
+                                if (__DEV__) {
+                                    console.log('DisasterDetailModal: No image to display. Image value:', imageValue, 'Type:', typeof imageValue);
+                                }
+                                return null;
+                            }
+                            
+                            const imageUrl = getImageUrl(imageValue);
+                            
+                            if (!imageUrl) {
+                                if (__DEV__) {
+                                    console.warn('DisasterDetailModal: getImageUrl returned null for:', imageValue);
+                                }
+                                return null;
+                            }
+                            
+                            if (__DEV__) {
+                                console.log('DisasterDetailModal: Displaying image from URL:', imageUrl, 'Original path:', imageValue);
+                            }
+                            
+                            return (
+                                <View style={styles.imageContainer}>
+                                    <Image
+                                        source={{ uri: imageUrl }}
+                                        style={styles.disasterImage}
+                                        resizeMode="cover"
+                                        onError={(error) => {
+                                            console.error('Disaster image load error:', error.nativeEvent?.error || error, 'for URL:', imageUrl);
+                                        }}
+                                        onLoad={() => {
+                                            if (__DEV__) {
+                                                console.log('Disaster image loaded successfully:', imageUrl);
+                                            }
+                                        }}
+                                    />
+                                </View>
+                            );
+                        })()}
+
                         {/* Address */}
                         {disaster.location.address && (
                             <View style={styles.infoRow}>
@@ -139,6 +193,18 @@ const styles = StyleSheet.create({
     },
     description: {
         marginBottom: 15,
+    },
+    imageContainer: {
+        width: '100%',
+        marginBottom: 15,
+        borderRadius: 8,
+        overflow: 'hidden',
+        backgroundColor: '#f0f0f0',
+    },
+    disasterImage: {
+        width: '100%',
+        height: 200,
+        borderRadius: 8,
     },
     infoRow: {
         flexDirection: 'row',

@@ -19,16 +19,26 @@ export default function ReportFoundItemScreen({ navigation }) {
     const [contactEmail, setContactEmail] = useState('');
 
     const handleSubmit = async () => {
-        if (!itemName || !description || !location) {
+        // Validate required fields
+        const trimmedItemName = itemName?.trim();
+        const trimmedDescription = description?.trim();
+        
+        if (!trimmedItemName || !trimmedDescription || !location) {
             Alert.alert('Missing Fields', 'Please fill in Item Name, Description, and Location.');
+            return;
+        }
+
+        // Validate location has coordinates
+        if (!location.longitude || !location.latitude) {
+            Alert.alert('Invalid Location', 'Please select a valid location.');
             return;
         }
 
         setLoading(true);
         try {
             const formData = new FormData();
-            formData.append('itemName', itemName);
-            formData.append('description', description);
+            formData.append('itemName', trimmedItemName);
+            formData.append('description', trimmedDescription);
 
             // Location
             formData.append('location[type]', 'Point');
@@ -37,30 +47,39 @@ export default function ReportFoundItemScreen({ navigation }) {
             if (address) formData.append('location[address]', address);
 
             // Contact
-            if (contactPhone) formData.append('contactInfo[phone]', contactPhone);
-            if (contactEmail) formData.append('contactInfo[email]', contactEmail);
+            if (contactPhone?.trim()) formData.append('contactInfo[phone]', contactPhone.trim());
+            if (contactEmail?.trim()) formData.append('contactInfo[email]', contactEmail.trim());
 
             // Image
             if (image) {
                 const filename = image.split('/').pop();
-                const match = /\.(\w+)$/.exec(filename);
-                const type = match ? `image/${match[1]}` : `image/jpeg`;
+                // Handle more image extensions
+                const match = /\.(jpg|jpeg|png|gif|webp|bmp)$/i.exec(filename);
+                const ext = match ? match[1].toLowerCase() : 'jpeg';
+                // Normalize extension for MIME type
+                const mimeType = ext === 'jpg' ? 'jpeg' : ext;
                 formData.append('image', {
                     uri: image,
                     name: filename,
-                    type,
+                    type: `image/${mimeType}`,
                 });
             }
 
             const res = await reportFound(formData);
-            if (res.data.success) {
+            if (res.data && res.data.success) {
                 Alert.alert('Success', 'Found item reported successfully', [
                     { text: 'OK', onPress: () => navigation.goBack() }
                 ]);
+            } else {
+                Alert.alert('Error', res.data?.message || 'Failed to report found item.');
             }
         } catch (error) {
-            console.error(error);
-            Alert.alert('Error', 'Failed to report found item.');
+            console.error('Report found item error:', error);
+            const errorMessage = error.response?.data?.message || 
+                                error.response?.data?.error || 
+                                error.message || 
+                                'Failed to report found item.';
+            Alert.alert('Error', errorMessage);
         } finally {
             setLoading(false);
         }

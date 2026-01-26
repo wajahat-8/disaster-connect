@@ -2,19 +2,13 @@ import apiClient from './apiClient';
 
 export const reportLost = async (data) => {
     // data should be FormData if containing image
-    return await apiClient.post('/lost-found/lost', data, {
-        headers: {
-            'Content-Type': 'multipart/form-data',
-        },
-    });
+    // Don't set Content-Type manually - let axios set it with boundary for FormData
+    return await apiClient.post('/lost-found/lost', data);
 };
 
 export const reportFound = async (data) => {
-    return await apiClient.post('/lost-found/found', data, {
-        headers: {
-            'Content-Type': 'multipart/form-data',
-        },
-    });
+    // Don't set Content-Type manually - let axios set it with boundary for FormData
+    return await apiClient.post('/lost-found/found', data);
 };
 
 export const getAllItems = async (params = {}) => {
